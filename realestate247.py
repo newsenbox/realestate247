@@ -151,9 +151,11 @@ buyer_entity_default = st.sidebar.text_input(
 # SCRAPER ENGINE — MULTI-COUNTY
 # ─────────────────────────────────────────────────────────────
 
-st.session_state.setdefault("scraped_leads", None)
-st.session_state.setdefault("pipeline_running", False)
-st.session_state.setdefault("last_scrape", None)
+# County change tracking — reset leads cache when county changes
+if st.session_state.get("_last_county") != selected_county:
+    st.session_state["scraped_leads"] = None
+    st.session_state["last_scrape"] = None
+    st.session_state["_last_county"] = selected_county
 
 
 def fetch_property_data(folio, county_config):
@@ -176,7 +178,8 @@ def fetch_property_data(folio, county_config):
             sales = data.get("SalesInfos", [])
 
             market_val = assessment.get("MarketValue", 0) or 0
-            sqft = building.get("BuildingEffectiveArea", 1500) or 1500
+            sqft = pd.to_numeric(building.get("BuildingEffectiveArea", 1500) or 1500, errors="coerce") or 1500
+            market_val = pd.to_numeric(assessment.get("MarketValue", 0) or 0, errors="coerce") or 0
 
             repairs = sqft * 50
             mao = (market_val * 0.70) - repairs - 15000
@@ -726,12 +729,12 @@ elif page == "🔎 Manual Search & E-Sign":
                     buf = BytesIO()
                     img.save(buf, format="PNG")
                     buf.seek(0)
-                    b64 = base64.b64encode(buf.read()).decode()
 
-                    st_downloads_text = f"data:image/png;base64,{b64}"
-                    st.markdown(
-                        f'<a href="{st_downloads_text}" download="signature.png">📥 Download Signature (PNG)</a>',
-                        unsafe_allow_html=True,
+                    st.download_button(
+                        label="📥 Download Signature (PNG)",
+                        data=buf.read(),
+                        file_name=f"signature_{details['Folio']}.png",
+                        mime="image/png",
                     )
 
                     exec_timestamp = datetime.now().isoformat()
@@ -1041,7 +1044,7 @@ elif page == "📈 Deal Analytics":
                     "MAO": "${:,.0f}",
                     "Deal Priority Score": "{:,.0f}",
                     "Days Delinquent": "{:,.0f}",
-                }).applymap(
+                }).map(
                     lambda x: "background-color: #fff3cd; font-weight: bold;" if isinstance(x, str) and "🗺️" in x else "",
                     subset=["Google Maps"]
                 ),
