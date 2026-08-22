@@ -94,6 +94,117 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
+# Custom CSS for polished look
+st.markdown("""
+<style>
+    .reportview-container { background: #0f1117; }
+    .sidebar .stSelectbox label, .sidebar .stRadio label, .sidebar .stCheckbox label, .sidebar .stSlider label {
+        color: #e0e0e0;
+    }
+    .sidebar .stMarkdown { color: #b0b0b0; }
+    .stDataFrame { border-radius: 8px; }
+    .metric-card {
+        background: rgba(255,255,255,0.05);
+        border: 1px solid rgba(255,255,255,0.1);
+        border-radius: 8px;
+        padding: 12px;
+        text-align: center;
+    }
+    .card-gradient-hot {
+        background: linear-gradient(135deg, #ff4757, #c0392b);
+        border-radius: 8px;
+        padding: 10px;
+        color: white;
+        text-align: center;
+    }
+    .card-gradient-good {
+        background: linear-gradient(135deg, #2ed573, #27ae60);
+        border-radius: 8px;
+        padding: 10px;
+        color: white;
+        text-align: center;
+    }
+    .card-gradient-warn {
+        background: linear-gradient(135deg, #ffa502, #e67e22);
+        border-radius: 8px;
+        padding: 10px;
+        color: white;
+        text-align: center;
+    }
+    .card-gradient-low {
+        background: linear-gradient(135deg, #747d8c, #2c3e50);
+        border-radius: 8px;
+        padding: 10px;
+        color: white;
+        text-align: center;
+    }
+    .property-card {
+        background: #1a1d28;
+        border-left: 4px solid #3498db;
+        border-radius: 6px;
+        padding: 12px;
+        margin-bottom: 8px;
+    }
+    .finance-strip {
+        display: flex;
+        gap: 10px;
+        padding: 8px;
+        background: #161a24;
+        border: 1px solid #2a2d3a;
+        border-radius: 6px;
+    }
+    .finance-item {
+        flex: 1;
+        text-align: center;
+        padding: 4px;
+    }
+    .finance-label {
+        font-size: 10px;
+        color: #888;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    .finance-value {
+        font-size: 15px;
+        font-weight: bold;
+        margin-top: 2px;
+    }
+    .btn-primary-custom {
+        background: linear-gradient(135deg, #667eea, #764ba2);
+        border: none;
+        border-radius: 8px;
+        padding: 10px 20px;
+        color: white;
+        font-weight: bold;
+    }
+    .kpi-container {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+        margin-bottom: 10px;
+    }
+    .kpi-box {
+        flex: 1;
+        min-width: 120px;
+        background: rgba(255,255,255,0.05);
+        border: 1px solid rgba(255,255,255,0.1);
+        border-radius: 8px;
+        padding: 10px;
+        text-align: center;
+    }
+    .kpi-number {
+        font-size: 24px;
+        font-weight: bold;
+        color: #fff;
+    }
+    .kpi-label {
+        font-size: 11px;
+        color: #aaa;
+        margin-top: 2px;
+    }
+</style>
+""", unsafe_allow_html=True)
+
 st.title("🏡 Autonomous Off-Market Deal Engine & Scraper")
 st.caption("Multi-County · Self-Generating Deal Pipeline · Property Appraiser API · E-Sign Contracts")
 
@@ -151,11 +262,9 @@ buyer_entity_default = st.sidebar.text_input(
 # SCRAPER ENGINE — MULTI-COUNTY
 # ─────────────────────────────────────────────────────────────
 
-# County change tracking — reset leads cache when county changes
-if st.session_state.get("_last_county") != selected_county:
-    st.session_state["scraped_leads"] = None
-    st.session_state["last_scrape"] = None
-    st.session_state["_last_county"] = selected_county
+st.session_state.setdefault("scraped_leads", None)
+st.session_state.setdefault("pipeline_running", False)
+st.session_state.setdefault("last_scrape", None)
 
 
 def fetch_property_data(folio, county_config):
@@ -178,8 +287,7 @@ def fetch_property_data(folio, county_config):
             sales = data.get("SalesInfos", [])
 
             market_val = assessment.get("MarketValue", 0) or 0
-            sqft = pd.to_numeric(building.get("BuildingEffectiveArea", 1500) or 1500, errors="coerce") or 1500
-            market_val = pd.to_numeric(assessment.get("MarketValue", 0) or 0, errors="coerce") or 0
+            sqft = building.get("BuildingEffectiveArea", 1500) or 1500
 
             repairs = sqft * 50
             mao = (market_val * 0.70) - repairs - 15000
@@ -446,7 +554,7 @@ if page == "📊 Auto-Scraper Dashboard":
         help="Select how many lead cards to display on this page. 'All' shows everything.",
     )
 
-    # Scrape button
+    # Scrape buttons row
     col1, col2, col3, col4 = st.columns(4)
     with col1:
         if st.button("🔄 Run Auto-Scrape Pipeline", type="primary"):
@@ -515,7 +623,8 @@ if page == "📊 Auto-Scraper Dashboard":
         if not df_filtered.empty:
             df_scored = calculate_deal_priority(df_filtered)
 
-            # Dashboard KPI cards
+            # ── KPI Cards ──
+            st.markdown("---")
             k1, k2, k3, k4, k5, k6 = st.columns(6)
             with k1:
                 st.metric("🏠 Total Leads", f"{len(df_scored)}")
@@ -536,79 +645,100 @@ if page == "📊 Auto-Scraper Dashboard":
             display_count = len(df_scored) if show_count == "All" else min(int(show_count), len(df_scored))
             df_display = df_scored.head(display_count)
 
-            # Property preview cards with Google Maps links
+            # ── Property Preview Cards ──
             st.subheader(f"📍 Property Previews ({display_count} shown)")
 
             for idx, row in df_display.iterrows():
                 col_a, col_b = st.columns([1, 3])
 
                 with col_a:
-                    tier_color = {
-                        "🔥 Hot Deal": "🔥",
-                        "✅ Good Deal": "✅",
-                        "⚠️ Worth Reviewing": "⚠️",
-                        "❌ Low Priority": "❌",
-                    }.get(row["Tier"], "📋")
+                    tier_class = (
+                        "card-gradient-hot" if "Hot" in row["Tier"]
+                        else "card-gradient-good" if "Good" in row["Tier"]
+                        else "card-gradient-warn" if "Worth" in row["Tier"]
+                        else "card-gradient-low"
+                    )
+                    tier_icon = (
+                        "🔥" if "Hot" in row["Tier"]
+                        else "✅" if "Good" in row["Tier"]
+                        else "⚠️" if "Worth" in row["Tier"]
+                        else "📋"
+                    )
                     st.markdown(f"""
-                    <div style="text-align:center; padding:8px; border-radius:8px; 
-                        background:{'linear-gradient(135deg, #ff6b6b, #ee5a24)' if 'Hot' in row['Tier'] 
-                        else 'linear-gradient(135deg, #4ecdc4, #2ecc71)' if 'Good' in row['Tier']
-                        else 'linear-gradient(135deg, #f39c12, #e67e22)' if 'Worth' in row['Tier']
-                        else '#95a5a6'}; color:white; font-size:14px; font-weight:bold;">
-                        {tier_color}<br>
-                        {row['Tier']}<br>
-                        <span style="font-size:11px; opacity:0.9;">Score: {row['Deal Priority Score']:.0f}</span>
+                    <div class="{tier_class}" style="margin-bottom:4px;">
+                        <div style="font-size:20px;">{tier_icon}</div>
+                        <div style="font-size:13px; font-weight:bold;">{row['Tier']}</div>
+                        <div style="font-size:10px; opacity:0.8; margin-top:2px;">
+                            Score: {row['Deal Priority Score']:.0f} / 200
+                        </div>
                     </div>
                     """, unsafe_allow_html=True)
 
                 with col_b:
-                    # Address with Google Maps link
+                    # Address card with Google Maps link
                     maps_url = f"https://www.google.com/maps/search/?api=1&query={row['Address'].replace(' ', '+')}"
                     st.markdown(f"""
-                    <div style="padding:8px; border-left:4px solid #3498db; background:#f8f9fa; 
-                        border-radius:4px; margin-bottom:4px;">
-                        <strong>{row['Address']}</strong><br>
-                        <small>Folio: {row['Folio']} · {row['County']} County · ZIP: {row['Zip Code']}</small><br>
-                        <a href="{maps_url}" target="_blank" style="color:#3498db; text-decoration:none; font-size:13px;">
+                    <div class="property-card">
+                        <div style="font-size:16px; font-weight:bold; color:#fff; margin-bottom:4px;">
+                            {row['Address']}
+                        </div>
+                        <div style="font-size:11px; color:#aaa; margin-bottom:6px;">
+                            Folio: {row['Folio']} · {row['County']} County · ZIP: {row['Zip Code']}
+                        </div>
+                        <a href="{maps_url}" target="_blank" style="display:inline-block; color:#3498db; text-decoration:none; font-size:13px; font-weight:bold; margin-right:12px;">
                             🗺️ View on Google Maps ↗
                         </a>
                     </div>
                     """, unsafe_allow_html=True)
 
-                    # Property details inline
+                    # Property details row
                     st.markdown(f"""
-                    <div style="display:flex; gap:16px; flex-wrap:wrap; padding:4px 0; font-size:13px; color:#555;">
-                        <span>👤 Owner: <strong>{row['Owner']}</strong></span>
-                        <span>🏚️ Distress: <strong>{row['Distress Type']}</strong></span>
-                        <span>📅 Delinquent: <strong>{row['Days Delinquent']} days</strong></span>
-                        <span>🚫 Absentee: <strong>{'Yes' if row['Absentee Owner'] else 'No'}</strong></span>
-                        <span>🏗️ Vacant: <strong>{'Yes' if row['Vacant Flag'] else 'No'}</strong></span>
+                    <div class="finance-strip">
+                        <div class="finance-item">
+                            <div class="finance-label">Owner</div>
+                            <div style="font-size:12px; color:#ccc;">{row['Owner']}</div>
+                        </div>
+                        <div class="finance-item">
+                            <div class="finance-label">Distress</div>
+                            <div style="font-size:12px; color:#e74c3c; font-weight:bold;">{row['Distress Type']}</div>
+                        </div>
+                        <div class="finance-item">
+                            <div class="finance-label">Delinquent</div>
+                            <div style="font-size:12px; color:#f39c12; font-weight:bold;">{row['Days Delinquent']} days</div>
+                        </div>
+                        <div class="finance-item">
+                            <div class="finance-label">Absentee</div>
+                            <div style="font-size:12px; color:#{'e74c3c' if row['Absentee Owner'] else '2ecc71'}; font-weight:bold;">{'Yes' if row['Absentee Owner'] else 'No'}</div>
+                        </div>
+                        <div class="finance-item">
+                            <div class="finance-label">Vacant</div>
+                            <div style="font-size:12px; color:#{'f39c12' if row['Vacant Flag'] else '2ecc71'}; font-weight:bold;">{'Yes' if row['Vacant Flag'] else 'No'}</div>
+                        </div>
                     </div>
                     """, unsafe_allow_html=True)
 
-                    # Financials
+                    # Financial strip
                     st.markdown(f"""
-                    <div style="display:flex; gap:12px; padding:6px 0; background:#fff; 
-                        border:1px solid #e0e0e0; border-radius:6px; margin-top:4px;">
-                        <div style="flex:1; text-align:center; padding:4px;">
-                            <div style="font-size:11px; color:#888;">Market Value</div>
-                            <div style="font-weight:bold; color:#2c3e50;">${row['Market Value']:,.0f}</div>
+                    <div class="finance-strip" style="margin-top:6px;">
+                        <div class="finance-item">
+                            <div class="finance-label">Market Value</div>
+                            <div class="finance-value" style="color:#2c3e50;">${row['Market Value']:,.0f}</div>
                         </div>
-                        <div style="flex:1; text-align:center; padding:4px;">
-                            <div style="font-size:11px; color:#888;">Est. Repairs</div>
-                            <div style="font-weight:bold; color:#e74c3c;">${row['Est. Repairs']:,.0f}</div>
+                        <div class="finance-item">
+                            <div class="finance-label">Est. Repairs</div>
+                            <div class="finance-value" style="color:#e74c3c;">${row['Est. Repairs']:,.0f}</div>
                         </div>
-                        <div style="flex:1; text-align:center; padding:4px;">
-                            <div style="font-size:11px; color:#888;">Target MAO</div>
-                            <div style="font-weight:bold; color:#27ae60; font-size:15px;">${row['MAO']:,.0f}</div>
+                        <div class="finance-item">
+                            <div class="finance-label" style="color:#27ae60;">Target MAO</div>
+                            <div class="finance-value" style="color:#27ae60; font-size:18px;">${row['MAO']:,.0f}</div>
                         </div>
-                        <div style="flex:1; text-align:center; padding:4px;">
-                            <div style="font-size:11px; color:#888;">SqFt</div>
-                            <div style="font-weight:bold; color:#2c3e50;">{row['SqFt']:,.0f}</div>
+                        <div class="finance-item">
+                            <div class="finance-label">SqFt</div>
+                            <div class="finance-value" style="color:#2c3e50;">{row['SqFt']:,.0f}</div>
                         </div>
-                        <div style="flex:1; text-align:center; padding:4px;">
-                            <div style="font-size:11px; color:#888;">Last Sale</div>
-                            <div style="font-weight:bold; color:#8e44ad;">${row['Last Sale Price']:,.0f}</div>
+                        <div class="finance-item">
+                            <div class="finance-label">Last Sale</div>
+                            <div class="finance-value" style="color:#8e44ad;">${row['Last Sale Price']:,.0f}</div>
                         </div>
                     </div>
                     """, unsafe_allow_html=True)
@@ -729,12 +859,12 @@ elif page == "🔎 Manual Search & E-Sign":
                     buf = BytesIO()
                     img.save(buf, format="PNG")
                     buf.seek(0)
+                    b64 = base64.b64encode(buf.read()).decode()
 
-                    st.download_button(
-                        label="📥 Download Signature (PNG)",
-                        data=buf.read(),
-                        file_name=f"signature_{details['Folio']}.png",
-                        mime="image/png",
+                    st_downloads_text = f"data:image/png;base64,{b64}"
+                    st.markdown(
+                        f'<a href="{st_downloads_text}" download="signature.png">📥 Download Signature (PNG)</a>',
+                        unsafe_allow_html=True,
                     )
 
                     exec_timestamp = datetime.now().isoformat()
@@ -761,7 +891,7 @@ elif page == "🔎 Manual Search & E-Sign":
             )
 
 # ─────────────────────────────────────────────────────────────
-# PAGE: DEAL ANALYTICS — FULLY REBUILT
+# PAGE: DEAL ANALYTICS — ENHANCED WITH PLOTLY CHARTS
 # ─────────────────────────────────────────────────────────────
 
 elif page == "📈 Deal Analytics":
