@@ -547,24 +547,14 @@ elif page == "3. Deal Pipeline & CRM":
 # ==============================================================================
 # PAGE 4: AI MARKET ANALYTICS (WITH FULL ARV & MAO CALCULATOR)
 # ==============================================================================
-elif page == "4. AI Market Analytics":
+elif page == "4. Market Analytics":
     st.markdown(
         '<div class="glow-title">QUANTUM MARKET ANALYTICS</div>',
         unsafe_allow_html=True,
     )
     st.caption(
-        "Predictive Distress Trends & ARV / MAO Deal Evaluation System"
-    )
-    st.markdown("<br>", unsafe_allow_html=True)
-
-    # Volume Chart
-    chart_data = pd.DataFrame({
-        "Month": ["Jan", "Feb", "Mar", "Apr", "May", "Jun"],
-        "Miami-Dade Leads": [320, 450, 510, 680, 890, 1120],
-        "Broward Leads": [210, 290, 340, 410, 520, 690],
-    }).set_index("Month")
-
-    st.line_chart(chart_data)
+         ARV / MAO Deal Evaluation System"
+   
 
     st.markdown("<br>", unsafe_allow_html=True)
 
