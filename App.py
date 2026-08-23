@@ -373,7 +373,6 @@ st.sidebar.markdown("---")
 
 st.sidebar.subheader("📊 Filter Leads")
 
-# CONVERTED FROM SLIDERS TO NUMBER INPUTS
 min_market_val = st.sidebar.number_input(
     "Minimum Market Value ($)", min_value=0, max_value=5000000, value=0, step=10000
 )
@@ -717,7 +716,6 @@ elif page == "4. AI Market Analytics & Calculator":
     calc_col1, calc_col2 = st.columns(2)
 
     with calc_col1:
-        # CONVERTED FROM SLIDER TO NUMBER INPUT
         market_value = st.number_input(
             "After Repair Value (ARV) / Market Value ($)",
             min_value=0,
@@ -735,7 +733,6 @@ elif page == "4. AI Market Analytics & Calculator":
         )
 
     with calc_col2:
-        # CONVERTED FROM SLIDER TO NUMBER INPUT
         investor_rule = st.number_input(
             "Investor Rule Target (%)",
             min_value=1,
@@ -870,6 +867,6 @@ st.markdown(
             </div>
         </div>
     </div>
-    """,
+""",
     unsafe_allow_html=True,
 )
