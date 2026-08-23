@@ -141,7 +141,7 @@ st.markdown("""
 
 
 # ==============================================================================
-# NAVIGATION SIDEBAR (THE 5 PAGES + INTEGRATED TOOLS)
+# NAVIGATION SIDEBAR
 # ==============================================================================
 st.sidebar.markdown("""
     <div style='text-align: center; padding: 10px 0;'>
@@ -156,10 +156,9 @@ page = st.sidebar.radio(
         "1. Scraper Control & Search",
         "2. Skip Trace & Contact Terminal",
         "3. Deal Pipeline & CRM",
-        "4. AI Market Analytics",
-        "5. System & API Matrix",
-        "6. ARV/MAO Calculator",
-        "7. Contract Generator"
+        "4. System & API Matrix",
+        "5. ARV/MAO Calculator",
+        "6. Contract Generator"
     ]
 )
 
@@ -213,7 +212,7 @@ st.sidebar.markdown(
 
 
 # ==============================================================================
-# PAGE 1: SCRAPER CONTROL & SEARCH HUB
+# PAGE 1: SCRAPER CONTROL & SEARCH HUB (WITH GOOGLE MAPS EMBED)
 # ==============================================================================
 if page == "1. Scraper Control & Search":
     st.markdown('<div class="glow-title">SYSTEM SCRAPER HUB // 3030</div>', unsafe_allow_html=True)
@@ -261,7 +260,7 @@ if page == "1. Scraper Control & Search":
     st.subheader("⚡ Quantum Search & Multi-Filter Controls")
     c1, c2, c3, c4 = st.columns([2, 1, 1, 1])
     with c1:
-        search_query = st.text_input("Target Query", placeholder="Address, Folio #, Zip, or Owner Name...")
+        search_query = st.text_input("Target Query", placeholder="Address, Folio #, Zip, or Owner Name...", value="1245 NW 36th St, Miami, FL")
     with c2:
         st.selectbox("County Zone", ["Miami-Dade Zone", "Broward Zone", "Palm Beach Zone"])
     with c3:
@@ -278,9 +277,9 @@ if page == "1. Scraper Control & Search":
     # Interactive Property Inspector / Google Maps Embed
     if search_query:
         st.markdown("<br>", unsafe_allow_html=True)
-        st.subheader(f"🔍 Live Inspection Map: {search_query}")
-        map_url = f"https://maps.google.com/maps?q={search_query.replace(' ', '%20')}&t=&z=15&ie=UTF8&iwloc=&output=embed"
-        st.components.v1.iframe(map_url, height=350)
+        st.subheader(f"🗺️ Live Google Map Inspection: {search_query}")
+        map_url = f"https://maps.google.com/maps?q={search_query.replace(' ', '%20')}&t=m&z=16&ie=UTF8&iwloc=&output=embed"
+        st.components.v1.iframe(map_url, height=380)
 
     st.markdown("---")
 
@@ -426,43 +425,27 @@ elif page == "3. Deal Pipeline & CRM":
 
 
 # ==============================================================================
-# PAGE 4: AI MARKET ANALYTICS
+# PAGE 4: SYSTEM & API MATRIX (HIDDEN API KEYS FOR PRIVACY)
 # ==============================================================================
-elif page == "4. AI Market Analytics":
-    st.markdown('<div class="glow-title">QUANTUM MARKET ANALYTICS</div>', unsafe_allow_html=True)
-    st.caption("Predictive Distress Trends & County Volume Analysis")
+elif page == "4. System & API Matrix":
+    st.markdown('<div class="glow-title">SYSTEM MATRIX & PRIVATE KEYS</div>', unsafe_allow_html=True)
+    st.caption("Secure Credentials & Private Endpoint Configurations")
     st.markdown("<br>", unsafe_allow_html=True)
 
-    chart_data = pd.DataFrame({
-        "Month": ["Jan", "Feb", "Mar", "Apr", "May", "Jun"],
-        "Miami-Dade Leads": [320, 450, 510, 680, 890, 1120],
-        "Broward Leads": [210, 290, 340, 410, 520, 690]
-    }).set_index("Month")
-
-    st.line_chart(chart_data)
-
-
-# ==============================================================================
-# PAGE 5: SYSTEM & API MATRIX
-# ==============================================================================
-elif page == "5. System & API Matrix":
-    st.markdown('<div class="glow-title">SYSTEM MATRIX & API KEYS</div>', unsafe_allow_html=True)
-    st.caption("Configure Scraping Nodes, Webhooks, and AI Integrations")
-    st.markdown("<br>", unsafe_allow_html=True)
-
+    # type="password" hides keys from screen/viewers
     st.text_input("County Scraper API Key", value="sk_live_3030_mdf_889211", type="password")
     st.text_input("Skip Trace Provider Webhook", value="https://api.skiptrace3030.io/v1/trace", type="password")
     st.text_input("Retell AI / ElevenLabs Integration Token", value="tw_token_990182371", type="password")
-    st.text_input("VPS SFTP Connection Port", value="22")
+    st.text_input("VPS SFTP Connection Port", value="22", type="password")
 
     if st.button("SAVE SYSTEM CONFIGURATION"):
-        st.success("Configuration updated and deployed across all nodes!")
+        st.success("Configuration updated and securely locked!")
 
 
 # ==============================================================================
-# PAGE 6: ARV / MAO COMPREHENSIVE CALCULATOR
+# PAGE 5: ARV / MAO COMPREHENSIVE CALCULATOR
 # ==============================================================================
-elif page == "6. ARV/MAO Calculator":
+elif page == "5. ARV/MAO Calculator":
     st.markdown('<div class="glow-title">COMPREHENSIVE ARV / MAO CALCULATOR</div>', unsafe_allow_html=True)
     st.caption("Deep-Dive Financial Analysis for Wholesale & Investor Offer Calculation")
     st.markdown("<br>", unsafe_allow_html=True)
@@ -493,9 +476,9 @@ elif page == "6. ARV/MAO Calculator":
 
 
 # ==============================================================================
-# PAGE 7: AUTOMATED CONTRACT GENERATOR
+# PAGE 6: AUTOMATED CONTRACT GENERATOR
 # ==============================================================================
-elif page == "7. Contract Generator":
+elif page == "6. Contract Generator":
     st.markdown('<div class="glow-title">AUTOMATED CONTRACT GENERATOR</div>', unsafe_allow_html=True)
     st.caption("Instant Standard Wholesale Purchase & Assignment Agreements")
     st.markdown("<br>", unsafe_allow_html=True)
