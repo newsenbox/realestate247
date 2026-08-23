@@ -7,8 +7,8 @@ from datetime import datetime
 # PAGE CONFIGURATION
 # ==============================================================================
 st.set_page_config(
-    page_title="24_7 REAL ESTATE PROPERTY ENGINE ",
-    page_icon="⚡",
+    page_title="🏡 24_7 REAL ESTATE PROPERTY ENGINE ",
+    page_icon="🏡 ",
     layout="wide",
     initial_sidebar_state="expanded"
 )
