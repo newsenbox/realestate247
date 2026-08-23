@@ -154,12 +154,10 @@ st.markdown(
         border-right: 1px solid #00f2fe33;
     }
 
-    /* Padding to ensure main content is not hidden behind the floating footer */
     .block-container {
         padding-bottom: 180px !important;
     }
     
-    /* Floating Footer CSS */
     .floating-footer {
         position: fixed;
         bottom: 0;
@@ -210,7 +208,6 @@ def calculate_deal_priority(df):
 
     df = df.copy()
 
-    # Data sanitization to avoid calculation errors
     df["Market Value"] = pd.to_numeric(
         df.get("Market Value", 0), errors="coerce"
     ).fillna(0)
@@ -222,12 +219,10 @@ def calculate_deal_priority(df):
     ).fillna(0)
     df["MAO"] = pd.to_numeric(df.get("MAO", 0), errors="coerce").fillna(0)
 
-    # Calculate Delinquency Score (0 - 100 based on 5-year cap)
     df["Delinquency Score"] = df["Days Delinquent"].apply(
         lambda x: min(100, (x / 1825) * 100) if x > 0 else 0
     )
 
-    # Absentee Score Logic
     if "Absentee Owner" in df.columns:
         df["Absentee Score"] = df["Absentee Owner"].apply(
             lambda x: 100 if bool(x) else 0
@@ -355,7 +350,6 @@ selected_county = st.sidebar.selectbox(
 )
 county_config = COUNTIES[selected_county]
 
-# Cache flush on county switch
 st.session_state.setdefault("current_county", selected_county)
 if st.session_state["current_county"] != selected_county:
     st.session_state["scraped_leads"] = None
@@ -378,15 +372,18 @@ else:
 st.sidebar.markdown("---")
 
 st.sidebar.subheader("📊 Filter Leads")
-min_market_val = st.sidebar.slider(
-    "Minimum Market Value ($)", min_value=0, max_value=500000, value=0, step=10000
+
+# CONVERTED FROM SLIDERS TO NUMBER INPUTS
+min_market_val = st.sidebar.number_input(
+    "Minimum Market Value ($)", min_value=0, max_value=5000000, value=0, step=10000
 )
-max_market_val = st.sidebar.slider(
-    "Maximum Market Value ($)", min_value=0, max_value=2000000, value=500000, step=10000
+max_market_val = st.sidebar.number_input(
+    "Maximum Market Value ($)", min_value=0, max_value=10000000, value=500000, step=10000
 )
-min_mao = st.sidebar.slider(
-    "Minimum MAO ($)", min_value=0, max_value=100000, value=0, step=5000
+min_mao = st.sidebar.number_input(
+    "Minimum MAO ($)", min_value=0, max_value=1000000, value=0, step=5000
 )
+
 show_tax_delinquent_only = st.sidebar.checkbox("Tax Delinquent Only", value=False)
 show_abandoned_only = st.sidebar.checkbox("Abandoned / Vacant Only", value=False)
 
@@ -423,7 +420,6 @@ if page == "1. Scraper Control & Search":
     st.caption(f"Live Tax Delinquency, Probate & Distress Property Scanner — Zone: {selected_county}")
     st.markdown("<br>", unsafe_allow_html=True)
 
-    # Top Metrics
     m1, m2, m3, m4 = st.columns(4)
     with m1:
         st.markdown(
@@ -472,7 +468,6 @@ if page == "1. Scraper Control & Search":
 
     st.markdown("<br>", unsafe_allow_html=True)
 
-    # Search & Filters
     st.subheader("⚡ Quantum Search & Multi-Filter Controls")
     c1, c2, c3, c4 = st.columns([2, 1, 1, 1])
     with c1:
@@ -514,7 +509,6 @@ if page == "1. Scraper Control & Search":
 
     st.markdown("---")
 
-    # High Priority Cards
     st.subheader("🔥 Prioritized Target Cards")
     dc1, dc2, dc3 = st.columns(3)
 
@@ -639,7 +633,6 @@ elif page == "2. Skip Trace & Contact Terminal":
 
     st.markdown("<br>", unsafe_allow_html=True)
 
-    # OPTICAL RECON SATELLITE MAP & RECON DATA
     st.subheader("🛰️ Property Optical Recon & Sales History")
     recon_col1, recon_col2 = st.columns([1.2, 1])
 
@@ -720,15 +713,15 @@ elif page == "4. AI Market Analytics & Calculator":
 
     st.markdown("<br>", unsafe_allow_html=True)
 
-    # ARV & MAO INVESTMENT CALCULATOR
     st.subheader("🧮 ARV & MAO Investment Deal Calculator")
     calc_col1, calc_col2 = st.columns(2)
 
     with calc_col1:
-        market_value = st.slider(
-            "After Repair Value (ARV) / Market Value ($0 - $1,000,000)",
+        # CONVERTED FROM SLIDER TO NUMBER INPUT
+        market_value = st.number_input(
+            "After Repair Value (ARV) / Market Value ($)",
             min_value=0,
-            max_value=1000000,
+            max_value=10000000,
             value=300000,
             step=5000,
         )
@@ -736,16 +729,17 @@ elif page == "4. AI Market Analytics & Calculator":
         est_repairs = st.number_input(
             "Estimated Repair Costs ($)",
             min_value=0,
-            max_value=500000,
-            value=40000,
+            max_value=1000000,
+            value=8000,
             step=1000,
         )
 
     with calc_col2:
-        investor_rule = st.slider(
+        # CONVERTED FROM SLIDER TO NUMBER INPUT
+        investor_rule = st.number_input(
             "Investor Rule Target (%)",
-            min_value=50,
-            max_value=90,
+            min_value=1,
+            max_value=100,
             value=70,
             step=1,
         )
@@ -770,7 +764,6 @@ elif page == "4. AI Market Analytics & Calculator":
 
     st.markdown("---")
 
-    # CONTRACT GENERATOR SECTION
     st.subheader("📄 Florida Assignment Contract Generator")
     st.caption("Auto-fills using your active calculation and account defaults")
 
@@ -855,7 +848,6 @@ st.caption(
     f"© WALTONEXLLC & 360 NEW BEGINNING LLC"
 )
 
-# Floating Legal & Compliance Matrix
 st.markdown(
     """
     <div class="floating-footer">
