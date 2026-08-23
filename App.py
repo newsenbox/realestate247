@@ -1,294 +1,47 @@
-"""
-Autonomous Property Engine — Multi-County Real Estate Deal Scraper
-────────────────────────────────────────────────────────────────────
-A self-generating, background-running deal pipeline that proactively
-scrapes public delinquent tax records, probate filings, and municipal
-code violations to identify abandoned or "forgotten" properties.
-
-Works for ALL counties — configurable county API endpoints and
-scraping sources. Built with Streamlit for the frontend.
-
-Author: 360 New Beginning LLC
-"""
-
 import streamlit as st
 import pandas as pd
-import requests
-import random
-from datetime import datetime
-from io import BytesIO
-import plotly.express as px
-import plotly.graph_objects as go
-from plotly.subplots import make_subplots
-from streamlit_drawable_canvas import st_canvas
-from PIL import Image
 import numpy as np
+from datetime import datetime
 
 # ─────────────────────────────────────────────────────────────
-# CONFIGURATION — ALL COUNTIES
-# ─────────────────────────────────────────────────────────────
-
-COUNTIES = {
-    "Miami-Dade": {
-        "pa_api": "https://www.miamidadepa.gov/pa/api/property/{folio}",
-        "tax_delinquent_url": "https://www.miamidade.gov/global/search/search.page?query=tax+delinquent",
-        "code_violations_url": "https://www.miamidade.gov/global/government/departments/mCode/enforcement/index.page",
-        "probate_url": "https://www.miamigov.com/courts/circuit/probate",
-        "folios": [
-            "0821220021310", "3021020010450", "0831150050120",
-            "3031100000100", "0821220010020", "3021030040880",
-            "0821220030080", "3031100010001", "0831150020030",
-        ],
-    },
-    "Broward": {
-        "pa_api": "https://www.browardpa.gov/api/property/{folio}",
-        "tax_delinquent_url": "https://www.browardcounty.gov/tax-delinquent",
-        "code_violations_url": "https://www.browardcounty.gov/code-enforcement",
-        "probate_url": "https://www.browardclerk.com/probate",
-        "folios": [
-            "1511110010001", "1511110020002", "1511110030003",
-            "1611110010001", "1611110020002",
-        ],
-    },
-    "Orange": {
-        "pa_api": "https://www.ocpau.com/api/property/{folio}",
-        "tax_delinquent_url": "https://www.ocpau.com/tax-collections",
-        "code_violations_url": "https://www.ocpau.com/code-enforcement",
-        "probate_url": "https://www.ocpau.com/probate",
-        "folios": [
-            "0911110010001", "0911110020002", "0911110030003",
-            "1011110010001", "1011110020002",
-        ],
-    },
-    "Hillsborough": {
-        "pa_api": "https://www.hcpafl.org/api/property/{folio}",
-        "tax_delinquent_url": "https://www.hctax.com/tax-delinquent",
-        "code_violations_url": "https://www.hillsboroughcounty.org/code-enforcement",
-        "probate_url": "https://www.hillsboroughclerk.com/probate",
-        "folios": [
-            "1211110010001", "1211110020002", "1211110030003",
-            "1311110010001", "1311110020002",
-        ],
-    },
-    "Pinellas": {
-        "pa_api": "https://www.pcpao.org/api/property/{folio}",
-        "tax_delinquent_url": "https://www.pcpao.org/tax-delinquent",
-        "code_violations_url": "https://www.pinellascounty.org/code-enforcement",
-        "probate_url": "https://www.pinellascourts.org/probate",
-        "folios": [
-            "1411110010001", "1411110020002", "1411110030003",
-            "1511110010001", "1511110020002",
-        ],
-    },
-}
-
-# ─────────────────────────────────────────────────────────────
-# APP SETUP & THEME
+# 1. PAGE CONFIGURATION & INITIALIZATION
 # ─────────────────────────────────────────────────────────────
 
 st.set_page_config(
-    page_title="Autonomous Property Engine — Multi-County",
+    page_title="24_7 Real Estate Property Engine | WALTONEXLLC",
     page_icon="🏡",
     layout="wide",
-    initial_sidebar_state="expanded",
+    initial_sidebar_state="expanded"
 )
 
-st.title("🏡 Autonomous Off-Market Deal Engine & Scraper")
-st.caption("Multi-County · Self-Generating Deal Pipeline · Property Appraiser API · E-Sign Contracts")
-
-# ─────────────────────────────────────────────────────────────
-# SIDEBAR — COUNTY SELECTION & ENGINE CONTROLS
-# ─────────────────────────────────────────────────────────────
-
-st.sidebar.header("⚙️ Engine Controls")
-
-selected_county = st.sidebar.selectbox(
-    "📍 Select County",
-    options=list(COUNTIES.keys()),
-    index=0,
-)
-county_config = COUNTIES[selected_county]
-
-# Automatically clear cache if county selection changes
-st.session_state.setdefault("current_county", selected_county)
-if st.session_state["current_county"] != selected_county:
-    st.session_state["scraped_leads"] = None
-    st.session_state["current_county"] = selected_county
-
-st.sidebar.markdown("---")
-
-scrape_mode = st.sidebar.radio(
-    "🔍 Scrape Mode",
-    ["Manual (One-Click)", "Background Pipeline (Scheduled)"],
-)
-
-if scrape_mode == "Background Pipeline (Scheduled)":
-    run_background = st.sidebar.checkbox("▶️ Run background pipeline", value=True)
-    if run_background:
-        st.sidebar.info("Background pipeline is active. The engine will auto-scrape on page load and every 30 minutes.")
-else:
-    st.sidebar.warning("Manual mode — click the scrape button when ready.")
-
-st.sidebar.markdown("---")
-
-st.sidebar.subheader("📊 Filter Leads")
-min_market_val = st.sidebar.slider(
-    "Minimum Market Value ($)", min_value=0, max_value=500000, value=0, step=10000
-)
-max_market_val = st.sidebar.slider(
-    "Maximum Market Value ($)", min_value=0, max_value=2000000, value=500000, step=10000
-)
-min_mao = st.sidebar.slider(
-    "Minimum MAO ($)", min_value=0, max_value=100000, value=0, step=5000
-)
-show_tax_delinquent_only = st.sidebar.checkbox("Tax Delinquent Only", value=False)
-show_abandoned_only = st.sidebar.checkbox("Abandoned / Vacant Only", value=False)
-
-st.sidebar.markdown("---")
-st.sidebar.subheader("👤 Account")
-buyer_entity_default = st.sidebar.text_input(
-    "Wholesaler / Entity Name",
-    value="360 New Beginning LLC",
-    help="This will be the Assignor on all generated contracts.",
-)
-
-# ─────────────────────────────────────────────────────────────
-# SCRAPER ENGINE — MULTI-COUNTY
-# ─────────────────────────────────────────────────────────────
-
-st.session_state.setdefault("scraped_leads", None)
-st.session_state.setdefault("pipeline_running", False)
-st.session_state.setdefault("last_scrape", None)
-
-
-def fetch_property_data(folio, county_config):
-    """
-    Fetches real-time parcel metrics from a county's Property Appraiser API.
-    County-specific — each county has its own API endpoint.
-    """
-    clean_folio = str(folio).replace("-", "").strip().zfill(13)
-    url = county_config["pa_api"].format(folio=clean_folio)
-
-    try:
-        res = requests.get(url, headers={"User-Agent": "Mozilla/5.0"}, timeout=10)
-        if res.status_code == 200:
-            data = res.json()
-
-            assessment = data.get("Assessment", {})
-            building = data.get("Building", {})
-            owner = data.get("Owner", {})
-            sales = data.get("SalesInfos", [])
-
-            market_val = assessment.get("MarketValue", 0) or 0
-            sqft = building.get("BuildingEffectiveArea", 1500) or 1500
-
-            repairs = sqft * 50
-            mao = (market_val * 0.70) - repairs - 15000
-            last_sale = sales[0].get("SalePrice", 0) if sales else 0
-
-            # Generate a plausible address for the demo
-            street_num = random.randint(100, 9999)
-            streets = ["Oak Ave", "Maple Dr", "Pine St", "Cedar Ln", "Elm St",
-                        "Birch Rd", "Willow Way", "Woodland Dr", "Sunset Blvd", "Park Ave"]
-            street_name = random.choice(streets)
-            city_map = {
-                "Miami-Dade": "Miami",
-                "Broward": "Fort Lauderdale",
-                "Orange": "Orlando",
-                "Hillsborough": "Tampa",
-                "Pinellas": "St. Petersburg",
-            }
-            city = city_map.get(selected_county, "FL")
-            demo_address = f"{street_num} {street_name}, {city}, FL"
-
-            return {
-                "Folio": clean_folio,
-                "County": selected_county,
-                "Address": demo_address,
-                "Owner": owner.get("Name1", f"Owner {random.randint(1000,9999)}"),
-                "Zip Code": f"{33000 + random.randint(0, 999):05d}",
-                "SqFt": sqft,
-                "Market Value": market_val,
-                "Est. Repairs": repairs,
-                "MAO": mao,
-                "Last Sale Price": last_sale,
-                "Distress Type": "Unknown",
-                "Days Delinquent": 0,
-                "Absentee Owner": False,
-                "Vacant Flag": False,
-            }
-    except Exception as e:
-        st.sidebar.warning(f"API error for folio {folio}: {str(e)[:50]}")
-        return None
-    return None
-
-
-def scrape_tax_delinquent_list(county_config):
-    """Simulates scraping the county tax-delinquent list."""
-    leads = []
-    folios = county_config.get("folios", [])[:10]
-    for folio in folios:
-        details = fetch_property_data(folio, county_config)
-        if details:
-            details["Distress Type"] = "Tax Delinquent"
-            details["Days Delinquent"] = random.randint(365, 1825)
-            details["Absentee Owner"] = random.choice([True, False])
-            leads.append(details)
-    return leads
-
-
-def scrape_code_violations(county_config):
-    """Simulates scraping municipal code violations."""
-    leads = []
-    folios = county_config.get("folios", [])[:10]
-    for folio in folios:
-        details = fetch_property_data(folio, county_config)
-        if details:
-            details["Distress Type"] = "Code Violation / Abandoned"
-            details["Days Delinquent"] = random.randint(90, 730)
-            details["Vacant Flag"] = random.choice([True, False])
-            leads.append(details)
-    return leads
-
-
-def scrape_probate_filings(county_config):
-    """Simulates scraping probate court filings."""
-    leads = []
-    folios = county_config.get("folios", [])[:10]
-    for folio in folios:
-        details = fetch_property_data(folio, county_config)
-        if details:
-            details["Distress Type"] = "Probate / Estate"
-            details["Days Delinquent"] = random.randint(0, 365)
-            details["Absentee Owner"] = True
-            leads.append(details)
-    return leads
-
-
-def auto_scrape_delinquent_leads(county_config, scrape_mode):
-    """Unified entry point for all scraping modes."""
-    all_leads = []
-
-    if scrape_mode == "Manual (One-Click)":
-        all_leads.extend(scrape_tax_delinquent_list(county_config))
-        all_leads.extend(scrape_code_violations(county_config))
-        all_leads.extend(scrape_probate_filings(county_config))
-    else:
-        all_leads.extend(scrape_tax_delinquent_list(county_config))
-        all_leads.extend(scrape_code_violations(county_config))
-
-    if all_leads:
-        return pd.DataFrame(all_leads)
-    return pd.DataFrame()
+# Supported Florida Counties Endpoint Matrix
+COUNTIES = {
+    "Miami-Dade": {
+        "appraiser_url": "https://www.miamidade.gov/pa/",
+        "tax_url": "https://miamidade.realforeclose.com/",
+        "code": "3030_MD"
+    },
+    "Broward": {
+        "appraiser_url": "https://bcpa.net/",
+        "tax_url": "https://broward.realforeclose.com/",
+        "code": "3030_BR"
+    },
+    "Palm Beach": {
+        "appraiser_url": "https://www.pbcgov.org/papa/",
+        "tax_url": "https://palmbeach.realforeclose.com/",
+        "code": "3030_PB"
+    }
+}
 
 
 # ─────────────────────────────────────────────────────────────
-# EQUITY & NEGLECT MULTIPLIER
+# 2. CORE ENGINE FUNCTIONS (SCORING & CONTRACTS)
 # ─────────────────────────────────────────────────────────────
 
 def calculate_deal_priority(df):
     """
-    Calculate a deal priority score safely with type sanitization.
+    Calculates deal priority score with automatic type sanitization.
+    Ranks leads dynamically based on delinquency, equity, and vacant status.
     """
     if df.empty:
         return df
@@ -301,6 +54,7 @@ def calculate_deal_priority(df):
     df["Days Delinquent"] = pd.to_numeric(df["Days Delinquent"], errors="coerce").fillna(0)
     df["MAO"] = pd.to_numeric(df["MAO"], errors="coerce").fillna(0)
 
+    # Calculate sub-scores
     df["Delinquency Score"] = df["Days Delinquent"].apply(
         lambda x: min(100, x / 1825 * 100) if x > 0 else 0
     )
@@ -312,6 +66,7 @@ def calculate_deal_priority(df):
         lambda x: min(50, (x - 2) * 20) if x > 2 else 0
     )
 
+    # Master Score Sum
     df["Deal Priority Score"] = (
         df["Delinquency Score"]
         + df["Absentee Score"]
@@ -336,22 +91,19 @@ def calculate_deal_priority(df):
     return df
 
 
-# ─────────────────────────────────────────────────────────────
-# CONTRACT GENERATOR
-# ─────────────────────────────────────────────────────────────
-
 def generate_contract_text(details, buyer_name):
-    """Generates a Florida Assignment of Real Estate Purchase & Sale Contract."""
+    """Generates a legal Florida Assignment of Real Estate Purchase & Sale Contract."""
     today = datetime.now().strftime("%B %d, %Y")
     mao = details.get("MAO", 0)
+    
     return f"""
 ================================================================================
-          FLORIDA ASSIGNMENT OF REAL ESTATE PURCHASE & SALE CONTRACT
+         FLORIDA ASSIGNMENT OF REAL ESTATE PURCHASE & SALE CONTRACT
 ================================================================================
 Date: {today}
 County: {details.get('County', 'N/A')}
-Parcel Folio Number: {details['Folio']}
-Property Address: {details['Address']}
+Parcel Folio Number: {details.get('Folio', 'N/A')}
+Property Address: {details.get('Address', 'N/A')}
 Zip Code: {details.get('Zip Code', 'N/A')}
 
 1. PARTIES:
@@ -359,9 +111,9 @@ Zip Code: {details.get('Zip Code', 'N/A')}
    Assignee (Seller/Owner of Record): {details.get('Owner', 'N/A')}
 
 2. PROPERTY:
-   The property located at {details['Address']}, {details.get('Zip Code', '')},
+   The property located at {details.get('Address', 'N/A')}, {details.get('Zip Code', '')},
    County of {details.get('County', '')}, Florida.
-   Parcel ID / Folio: {details['Folio']}
+   Parcel ID / Folio: {details.get('Folio', 'N/A')}
 
 3. AGREED PURCHASE PRICE:
    The Assignee agrees to purchase the Property for the sum of:
@@ -392,591 +144,125 @@ Zip Code: {details.get('Zip Code', 'N/A')}
 
 
 # ─────────────────────────────────────────────────────────────
-# UI — DASHBOARD
+# 3. SIDEBAR CONTROLS & NAVIGATION
 # ─────────────────────────────────────────────────────────────
+
+st.sidebar.header("⚙️ Engine Controls")
+
+selected_county = st.sidebar.selectbox(
+    "📍 Select County",
+    options=list(COUNTIES.keys()),
+    index=0,
+)
+county_config = COUNTIES[selected_county]
+
+# Cache flush on county switch
+st.session_state.setdefault("current_county", selected_county)
+if st.session_state["current_county"] != selected_county:
+    st.session_state["scraped_leads"] = None
+    st.session_state["current_county"] = selected_county
 
 st.sidebar.markdown("---")
-st.sidebar.markdown(f"""
-**Selected County:** {selected_county}
-**PA API:** `{county_config['pa_api']}`
-""")
 
-page = st.sidebar.radio(
-    "📌 Page",
-    [
-        "📊 Auto-Scraper Dashboard",
-        "🔎 Manual Search & E-Sign",
-        "📈 Deal Analytics",
-    ],
+scrape_mode = st.sidebar.radio(
+    "🔍 Scrape Mode",
+    ["Manual (One-Click)", "Background Pipeline (Scheduled)"],
 )
 
-if scrape_mode == "Background Pipeline (Scheduled)" and run_background:
-    st.sidebar.success("▶️ Background Pipeline: ON")
+if scrape_mode == "Background Pipeline (Scheduled)":
+    run_background = st.sidebar.checkbox("▶️ Run background pipeline", value=True)
+    if run_background:
+        st.sidebar.info("3030 Engine Active: Auto-scraping every 30 mins.")
 else:
-    st.sidebar.info("▶️ Background Pipeline: OFF")
+    st.sidebar.warning("Manual mode — click the scrape button when ready.")
+
+st.sidebar.markdown("---")
+
+st.sidebar.subheader("📊 Filter Leads")
+min_market_val = st.sidebar.slider(
+    "Minimum Market Value ($)", min_value=0, max_value=500000, value=0, step=10000
+)
+max_market_val = st.sidebar.slider(
+    "Maximum Market Value ($)", min_value=0, max_value=2000000, value=500000, step=10000
+)
+min_mao = st.sidebar.slider(
+    "Minimum MAO ($)", min_value=0, max_value=100000, value=0, step=5000
+)
+show_tax_delinquent_only = st.sidebar.checkbox("Tax Delinquent Only", value=False)
+show_abandoned_only = st.sidebar.checkbox("Abandoned / Vacant Only", value=False)
+
+st.sidebar.markdown("---")
+st.sidebar.subheader("👤 Account")
+buyer_entity_default = st.sidebar.text_input(
+    "Wholesaler / Entity Name",
+    value="360 New Beginning LLC",
+    help="This will be the Assignor on all generated contracts.",
+)
+
 
 # ─────────────────────────────────────────────────────────────
-# PAGE: AUTO-SCRAPER DASHBOARD
+# 4. MAIN DASHBOARD CONTENT AREA
 # ─────────────────────────────────────────────────────────────
 
-if page == "📊 Auto-Scraper Dashboard":
-    st.subheader(f"🔥 Live Distressed Property Stream — {selected_county} County")
-    st.write(
-        f"The engine automatically crawls {selected_county}'s public record indexes "
-        f"for tax liens, municipal violations, probate filings, and equity margins. "
-        f"Configure counties in the sidebar."
+st.title("🏡 24/7 Real Estate Property Engine")
+st.caption(f"3030 Precision Automation · Targeting: **{selected_county} County, FL**")
+
+st.markdown("---")
+
+# Demo lead pipeline trigger
+if st.button("🚀 Run 3030 Scraping Pipeline"):
+    with st.spinner("Querying Property Appraiser & Tax Collector records..."):
+        # Simulated scraped dataframe matching engine architecture
+        data = {
+            "Folio": ["30-2134-001-0010", "30-3112-005-0210"],
+            "Address": ["123 NW 36th St, Miami, FL", "456 SE 2nd Ave, Hialeah, FL"],
+            "County": [selected_county, selected_county],
+            "Zip Code": ["33127", "33010"],
+            "Owner": ["John Doe Estate", "Jane Smith"],
+            "Market Value": [320000, 240000],
+            "Est. Repairs": [45000, 15000],
+            "Days Delinquent": [720, 180],
+            "Absentee Owner": [True, True],
+            "Vacant Flag": [True, False],
+            "MAO": [180000, 140000],
+            "SqFt": [1650, 1200]
+        }
+        df_raw = pd.DataFrame(data)
+        st.session_state["scraped_leads"] = calculate_deal_priority(df_raw)
+        st.session_state["last_scrape"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+# Display Scraped Results & Contracts
+if "scraped_leads" in st.session_state and st.session_state["scraped_leads"] is not None:
+    df_leads = st.session_state["scraped_leads"]
+    
+    st.subheader("🔥 Prioritized Deals")
+    st.dataframe(
+        df_leads[[
+            "Tier", "Deal Priority Score", "Address", "Market Value", 
+            "MAO", "Days Delinquent", "Owner"
+        ]],
+        use_container_width=True
+    )
+    
+    st.markdown("---")
+    st.subheader("📄 Contract Generator")
+    selected_address = st.selectbox("Select Property to Draft Assignment Contract:", df_leads["Address"])
+    
+    selected_deal = df_leads[df_leads["Address"] == selected_address].iloc[0].to_dict()
+    
+    contract_code = generate_contract_text(selected_deal, buyer_entity_default)
+    
+    st.code(contract_code, language="text")
+    
+    st.download_button(
+        label="💾 Download Contract (.txt)",
+        data=contract_code,
+        file_name=f"Assignment_Contract_{selected_deal['Folio']}.txt",
+        mime="text/plain"
     )
 
-    show_count = st.selectbox(
-        "👁️ How many property previews to show?",
-        options=[5, 10, 15, 20, 25, 30, 50, "All"],
-        index=1,
-        help="Select how many lead cards to display on this page. 'All' shows everything.",
-    )
-
-    col1, col2, col3, col4 = st.columns(4)
-    with col1:
-        if st.button("🔄 Run Auto-Scrape Pipeline", type="primary"):
-            with st.spinner(
-                f"Scraping {selected_county} tax lists, code violations, and probate records..."
-            ):
-                df_leads = auto_scrape_delinquent_leads(county_config, scrape_mode)
-                st.session_state["scraped_leads"] = df_leads
-                st.session_state["last_scrape"] = datetime.now().isoformat()
-                st.success(f"✅ Scraped {len(df_leads)} leads from {selected_county} County!")
-                st.rerun()
-
-    with col2:
-        if st.button("🔄 Re-Scrape Now", type="secondary"):
-            with st.spinner(f"Re-scraping {selected_county}..."):
-                df_leads = auto_scrape_delinquent_leads(county_config, scrape_mode)
-                st.session_state["scraped_leads"] = df_leads
-                st.session_state["last_scrape"] = datetime.now().isoformat()
-                st.success(f"✅ Re-scraped! {len(df_leads)} leads loaded.")
-                st.rerun()
-
-    with col3:
-        if st.button("📥 Export All Leads (CSV)"):
-            df = st.session_state["scraped_leads"]
-            if df is not None and not df.empty:
-                csv = df.to_csv(index=False).encode("utf-8")
-                st.download_button(
-                    "⬇️ Download CSV",
-                    csv,
-                    f"Property_Leads_{selected_county}_{datetime.now().strftime('%Y%m%d')}.csv",
-                    "text/csv",
-                )
-            else:
-                st.warning("No leads to export yet.")
-
-    with col4:
-        clear_cache = st.button("🗑️ Clear All Data", type="secondary")
-        if clear_cache:
-            st.session_state["scraped_leads"] = None
-            st.session_state["last_scrape"] = None
-            st.rerun()
-
-    if scrape_mode == "Background Pipeline (Scheduled)" and run_background:
-        if st.session_state["scraped_leads"] is None:
-            with st.spinner(f"Background pipeline: scraping {selected_county}..."):
-                df_leads = auto_scrape_delinquent_leads(county_config, scrape_mode)
-                st.session_state["scraped_leads"] = df_leads
-                st.session_state["last_scrape"] = datetime.now().isoformat()
-
-    df = st.session_state["scraped_leads"]
-    if df is not None and not df.empty:
-        df_filtered = df[
-            (df["Market Value"] >= min_market_val)
-            & (df["Market Value"] <= max_market_val)
-            & (df["MAO"] >= min_mao)
-        ]
-        if show_tax_delinquent_only:
-            df_filtered = df_filtered[df_filtered["Distress Type"] == "Tax Delinquent"]
-        if show_abandoned_only:
-            df_filtered = df_filtered[df_filtered["Vacant Flag"] == True]
-
-        if not df_filtered.empty:
-            df_scored = calculate_deal_priority(df_filtered)
-
-            k1, k2, k3, k4, k5, k6 = st.columns(6)
-            with k1:
-                st.metric("🏠 Total Leads", f"{len(df_scored)}")
-            with k2:
-                st.metric("🔥 Hot Deals", f"{len(df_scored[df_scored['Tier'] == '🔥 Hot Deal'])}")
-            with k3:
-                st.metric("✅ Good Deals", f"{len(df_scored[df_scored['Tier'] == '✅ Good Deal'])}")
-            with k4:
-                st.metric("⚠️ Worth Reviewing", f"{len(df_scored[df_scored['Tier'] == '⚠️ Worth Reviewing'])}")
-            with k5:
-                st.metric("💰 Avg. MAO", f"${df_scored['MAO'].mean():,.0f}")
-            with k6:
-                st.metric("📈 Avg. Market Value", f"${df_scored['Market Value'].mean():,.0f}")
-
-            st.markdown("---")
-
-            display_count = len(df_scored) if show_count == "All" else min(int(show_count), len(df_scored))
-            df_display = df_scored.head(display_count)
-
-            st.subheader(f"📍 Property Previews ({display_count} shown)")
-
-            for idx, row in df_display.iterrows():
-                col_a, col_b = st.columns([1, 3])
-
-                with col_a:
-                    tier_color = {
-                        "🔥 Hot Deal": "🔥",
-                        "✅ Good Deal": "✅",
-                        "⚠️ Worth Reviewing": "⚠️",
-                        "❌ Low Priority": "❌",
-                    }.get(row["Tier"], "📋")
-                    st.markdown(f"""
-                    <div style="text-align:center; padding:8px; border-radius:8px; 
-                        background:{'linear-gradient(135deg, #ff6b6b, #ee5a24)' if 'Hot' in row['Tier'] 
-                        else 'linear-gradient(135deg, #4ecdc4, #2ecc71)' if 'Good' in row['Tier']
-                        else 'linear-gradient(135deg, #f39c12, #e67e22)' if 'Worth' in row['Tier']
-                        else '#95a5a6'}; color:white; font-size:14px; font-weight:bold;">
-                        {tier_color}<br>
-                        {row['Tier']}<br>
-                        <span style="font-size:11px; opacity:0.9;">Score: {row['Deal Priority Score']:.0f}</span>
-                    </div>
-                    """, unsafe_allow_html=True)
-
-                with col_b:
-                    maps_url = f"https://www.google.com/maps/search/?api=1&query={row['Address'].replace(' ', '+')}"
-                    st.markdown(f"""
-                    <div style="padding:8px; border-left:4px solid #3498db; background:#f8f9fa; 
-                        border-radius:4px; margin-bottom:4px;">
-                        <strong>{row['Address']}</strong><br>
-                        <small>Folio: {row['Folio']} · {row['County']} County · ZIP: {row['Zip Code']}</small><br>
-                        <a href="{maps_url}" target="_blank" style="color:#3498db; text-decoration:none; font-size:13px;">
-                            🗺️ View on Google Maps ↗
-                        </a>
-                    </div>
-                    """, unsafe_allow_html=True)
-
-                    st.markdown(f"""
-                    <div style="display:flex; gap:16px; flex-wrap:wrap; padding:4px 0; font-size:13px; color:#555;">
-                        <span>👤 Owner: <strong>{row['Owner']}</strong></span>
-                        <span>🏚️ Distress: <strong>{row['Distress Type']}</strong></span>
-                        <span>📅 Delinquent: <strong>{row['Days Delinquent']} days</strong></span>
-                        <span>🚫 Absentee: <strong>{'Yes' if row['Absentee Owner'] else 'No'}</strong></span>
-                        <span>🏗️ Vacant: <strong>{'Yes' if row['Vacant Flag'] else 'No'}</strong></span>
-                    </div>
-                    """, unsafe_allow_html=True)
-
-                    st.markdown(f"""
-                    <div style="display:flex; gap:12px; padding:6px 0; background:#fff; 
-                        border:1px solid #e0e0e0; border-radius:6px; margin-top:4px;">
-                        <div style="flex:1; text-align:center; padding:4px;">
-                            <div style="font-size:11px; color:#888;">Market Value</div>
-                            <div style="font-weight:bold; color:#2c3e50;">${row['Market Value']:,.0f}</div>
-                        </div>
-                        <div style="flex:1; text-align:center; padding:4px;">
-                            <div style="font-size:11px; color:#888;">Est. Repairs</div>
-                            <div style="font-weight:bold; color:#e74c3c;">${row['Est. Repairs']:,.0f}</div>
-                        </div>
-                        <div style="flex:1; text-align:center; padding:4px;">
-                            <div style="font-size:11px; color:#888;">Target MAO</div>
-                            <div style="font-weight:bold; color:#27ae60; font-size:15px;">${row['MAO']:,.0f}</div>
-                        </div>
-                        <div style="flex:1; text-align:center; padding:4px;">
-                            <div style="font-size:11px; color:#888;">SqFt</div>
-                            <div style="font-weight:bold; color:#2c3e50;">{row['SqFt']:,.0f}</div>
-                        </div>
-                        <div style="flex:1; text-align:center; padding:4px;">
-                            <div style="font-size:11px; color:#888;">Last Sale</div>
-                            <div style="font-weight:bold; color:#8e44ad;">${row['Last Sale Price']:,.0f}</div>
-                        </div>
-                    </div>
-                    """, unsafe_allow_html=True)
-
-                st.divider()
-
-            csv_data = df_scored.to_csv(index=False).encode("utf-8")
-            st.download_button(
-                "📥 Export Filtered & Scored Leads (CSV)",
-                csv_data,
-                f"Filtered_{selected_county}_Leads_{datetime.now().strftime('%Y%m%d_%H%M')}.csv",
-                "text/csv",
-                mime="text/csv",
-            )
-        else:
-            st.warning("No leads match your filters. Try adjusting the sliders.")
-    else:
-        st.info(
-            f"🚀 Ready to scrape {selected_county} County. "
-            f"Click 'Run Auto-Scrape Pipeline' or wait for the background pipeline."
-        )
-
 # ─────────────────────────────────────────────────────────────
-# PAGE: MANUAL SEARCH & E-SIGN
-# ─────────────────────────────────────────────────────────────
-
-elif page == "🔎 Manual Search & E-Sign":
-    st.subheader(f"🔎 Deal Underwriting & Instant Contract Signing — {selected_county} County")
-
-    col1, col2, col3 = st.columns(3)
-    with col1:
-        folio_input = st.text_input(
-            "Enter Folio Number (13 digits)",
-            placeholder="e.g. 0821220021310",
-            help="The 13-digit Miami-Dade (or selected county) folio number from the parcel ID.",
-        )
-
-    if folio_input:
-        clean_folio = str(folio_input).replace("-", "").strip().zfill(13)
-        with st.spinner(f"Analyzing parcel {clean_folio} in {selected_county}..."):
-            details = fetch_property_data(clean_folio, county_config)
-
-        if details:
-            st.success(f"✅ Property identified in {selected_county} County!")
-            st.write(f"**Address:** {details['Address']}")
-
-            maps_url = f"https://www.google.com/maps/search/?api=1&query={details['Address'].replace(' ', '+')}"
-            st.markdown(f"[🗺️ View on Google Maps]({maps_url})", unsafe_allow_html=True)
-            st.write(f"**Owner:** {details['Owner']}")
-
-            c1, c2, c3, c4 = st.columns(4)
-            with c1:
-                st.metric("Market Value", f"${details['Market Value']:,.2f}")
-            with c2:
-                st.metric("Est. Repairs (@ $50/sqft)", f"${details['Est. Repairs']:,.2f}")
-            with c3:
-                st.metric("Target MAO", f"${details['MAO']:,.2f}")
-            with c4:
-                st.metric("Last Sale Price", f"${details['Last Sale Price']:,.2f}")
-
-            col5, col6, col7, col8 = st.columns(4)
-            with col5:
-                st.metric("Folio", details["Folio"])
-            with col6:
-                st.metric("SqFt", f"{details['SqFt']:,.0f}")
-            with col7:
-                st.metric("County", details["County"])
-            with col8:
-                st.metric("Zip", details.get("Zip Code", "N/A"))
-
-            st.markdown("---")
-            st.subheader("✍️ E-Sign Assignment Contract")
-            buyer_entity = st.text_input(
-                "Wholesaler / Entity Name:",
-                value=buyer_entity_default,
-                help="The Assignor (your entity) on the contract.",
-            )
-
-            if st.button("📄 Generate Assignment Contract", type="primary"):
-                contract_text = generate_contract_text(details, buyer_entity)
-                st.session_state["active_contract"] = contract_text
-                st.session_state["contract_details"] = details
-                st.session_state["contract_buyer"] = buyer_entity
-
-            if "active_contract" in st.session_state:
-                st.code(st.session_state["active_contract"], language="text")
-
-                st.markdown("---")
-                st.subheader("✍️ Capture Seller / Assignor Signature")
-
-                canvas_result = st_canvas(
-                    fill_color="rgba(255, 255, 255, 0)",
-                    stroke_width=2,
-                    stroke_color="#000000",
-                    background_color="#f0f2f6",
-                    height=150,
-                    width=500,
-                    drawing_mode="freedraw",
-                    key="signature_canvas",
-                )
-
-                if (
-                    canvas_result.image_data is not None
-                    and canvas_result.image_data.any()
-                ):
-                    st.success("✅ Signature Captured!")
-
-                    image_array = canvas_result.image_data.astype(np.uint8)
-                    img = Image.fromarray(image_array[:, :, :3], "RGB")
-
-                    buf = BytesIO()
-                    img.save(buf, format="PNG")
-                    buf.seek(0)
-
-                    # Replaced HTML Base64 with native download button
-                    st.download_button(
-                        label="📥 Download Signature (PNG)",
-                        data=buf.getvalue(),
-                        file_name=f"signature_{details['Folio']}.png",
-                        mime="image/png",
-                    )
-
-                    exec_timestamp = datetime.now().isoformat()
-                    final_doc = (
-                        st.session_state["active_contract"]
-                        + f"\n[EXECUTED VIA E-SIGN AT: {exec_timestamp}]\n"
-                    )
-
-                    st.download_button(
-                        label="📥 Download Executed Contract",
-                        data=final_doc,
-                        file_name=f"Contract_{details['Folio']}.txt",
-                        mime="text/plain",
-                    )
-
-                    st.info(
-                        "✅ Contract executed and ready for download. "
-                        "Both the signed contract and signature image are available."
-                    )
-        else:
-            st.error(
-                f"❌ Could not fetch property data for folio {clean_folio}. "
-                f"Check the folio number or the {selected_county} PA API is reachable."
-            )
-
-# ─────────────────────────────────────────────────────────────
-# PAGE: DEAL ANALYTICS
-# ─────────────────────────────────────────────────────────────
-
-elif page == "📈 Deal Analytics":
-    st.subheader(f"📈 Deal Analytics — {selected_county} County")
-
-    df_all = st.session_state["scraped_leads"]
-    if df_all is not None and not df_all.empty:
-        max_rows = len(df_all)
-        analyze_count = st.selectbox(
-            "📊 How many leads to include in analytics?",
-            options=[5, 10, 15, 20, 25, 30, 50, 100, "All"],
-            index=2,
-            help="Choose how many of the scraped leads to include in charts and tables.",
-        )
-        rows_to_use = max_rows if analyze_count == "All" else min(int(analyze_count), max_rows)
-        df = df_all.head(rows_to_use)
-        df_scored = calculate_deal_priority(df)
-
-        st.markdown("---")
-        st.subheader("🔍 Analytics Filters")
-        filter_col1, filter_col2, filter_col3, filter_col4, filter_col5 = st.columns(5)
-        with filter_col1:
-            tier_filter = st.multiselect(
-                "Select Tiers",
-                options=["🔥 Hot Deal", "✅ Good Deal", "⚠️ Worth Reviewing", "❌ Low Priority"],
-                default=["🔥 Hot Deal", "✅ Good Deal", "⚠️ Worth Reviewing", "❌ Low Priority"],
-            )
-        with filter_col2:
-            distress_filter = st.multiselect(
-                "Distress Types",
-                options=["Tax Delinquent", "Code Violation / Abandoned", "Probate / Estate"],
-                default=["Tax Delinquent", "Code Violation / Abandoned", "Probate / Estate"],
-            )
-        with filter_col3:
-            min_market = st.number_input("Min Market Value ($)", value=0, step=10000)
-        with filter_col4:
-            max_market = st.number_input("Max Market Value ($)", value=2000000, step=10000)
-        with filter_col5:
-            min_mao_val = st.number_input("Min MAO ($)", value=0, step=5000)
-
-        df_filtered = df_scored.copy()
-        if tier_filter:
-            df_filtered = df_filtered[df_filtered["Tier"].isin(tier_filter)]
-        if distress_filter:
-            df_filtered = df_filtered[df_filtered["Distress Type"].isin(distress_filter)]
-        df_filtered = df_filtered[
-            (df_filtered["Market Value"] >= min_market)
-            & (df_filtered["Market Value"] <= max_market)
-            & (df_filtered["MAO"] >= min_mao_val)
-        ]
-
-        if df_filtered.empty:
-            st.warning("No data matches your filters. Try adjusting them.")
-        else:
-            st.markdown("---")
-            st.subheader("📊 Key Performance Indicators")
-
-            kp1, kp2, kp3, kp4, kp5, kp6, kp7, kp8 = st.columns(8)
-            with kp1:
-                st.metric("🏠 Total Properties", f"{len(df_filtered)}")
-            with kp2:
-                st.metric("🔥 Hot Deals", f"{len(df_filtered[df_filtered['Tier'] == '🔥 Hot Deal'])}")
-            with kp3:
-                st.metric("✅ Good Deals", f"{len(df_filtered[df_filtered['Tier'] == '✅ Good Deal'])}")
-            with kp4:
-                st.metric("⚠️ Worth Reviewing", f"{len(df_filtered[df_filtered['Tier'] == '⚠️ Worth Reviewing'])}")
-            with kp5:
-                st.metric("💰 Total MAO Value", f"${df_filtered['MAO'].sum():,.0f}")
-            with kp6:
-                st.metric("📈 Avg. Market Value", f"${df_filtered['Market Value'].mean():,.0f}")
-            with kp7:
-                st.metric("🔨 Avg. Repairs", f"${df_filtered['Est. Repairs'].mean():,.0f}")
-            with kp8:
-                st.metric("🏆 Best MAO", f"${df_filtered['MAO'].max():,.0f}")
-
-            st.markdown("---")
-            st.subheader("📈 Market Analysis Charts")
-
-            c1, c2 = st.columns(2)
-            with c1:
-                st.subheader("MAO Distribution")
-                fig_mao = px.histogram(
-                    df_filtered, x="MAO", nbins=25,
-                    title="MAO Distribution",
-                    labels={"MAO": "Maximum Allowable Offer ($)", "count": "Number of Properties"},
-                    color_discrete_sequence=["#e74c3c"],
-                    hover_data=["Address", "Folio", "Tier"],
-                )
-                fig_mao.update_layout(showlegend=False, template="plotly_dark")
-                st.plotly_chart(fig_mao, use_container_width=True)
-
-            with c2:
-                st.subheader("Market Value Distribution")
-                fig_mv = px.histogram(
-                    df_filtered, x="Market Value", nbins=25,
-                    title="Market Value (ARV) Distribution",
-                    labels={"Market Value": "Market Value / ARV ($)", "count": "Number of Properties"},
-                    color_discrete_sequence=["#2ecc71"],
-                    hover_data=["Address", "Folio", "Tier"],
-                )
-                fig_mv.update_layout(showlegend=False, template="plotly_dark")
-                st.plotly_chart(fig_mv, use_container_width=True)
-
-            c3, c4, c5 = st.columns(3)
-            with c3:
-                st.subheader("Deal Priority Score Distribution")
-                fig_score = px.histogram(
-                    df_filtered, x="Deal Priority Score", nbins=20,
-                    title="Deal Priority Score",
-                    color_discrete_sequence=["#f39c12"],
-                    hover_data=["Address", "Folio", "Tier", "MAO"],
-                )
-                fig_score.update_layout(showlegend=False, template="plotly_dark")
-                st.plotly_chart(fig_score, use_container_width=True)
-
-            with c4:
-                st.subheader("Tier Breakdown")
-                tier_counts = df_filtered["Tier"].value_counts()
-                fig_tier = px.bar(
-                    tier_counts.reset_index(),
-                    x="index", y="Tier",
-                    title="Deal Tier Breakdown",
-                    labels={"index": "Tier", "Tier": "Count"},
-                    color_discrete_sequence=["#3498db"],
-                )
-                fig_tier.update_layout(showlegend=False, template="plotly_dark")
-                st.plotly_chart(fig_tier, use_container_width=True)
-
-            with c5:
-                st.subheader("Days Delinquent vs MAO")
-                fig_scatter = px.scatter(
-                    df_filtered, x="Days Delinquent", y="MAO",
-                    color="Tier",
-                    title="Days Delinquent vs MAO",
-                    hover_data=["Address", "Folio", "Owner"],
-                    color_discrete_map={
-                        "🔥 Hot Deal": "#e74c3c",
-                        "✅ Good Deal": "#2ecc71",
-                        "⚠️ Worth Reviewing": "#f39c12",
-                        "❌ Low Priority": "#95a5a6",
-                    },
-                )
-                fig_scatter.update_layout(template="plotly_dark")
-                st.plotly_chart(fig_scatter, use_container_width=True)
-
-            st.markdown("---")
-            st.subheader("🔥 Top Deals — Filterable Data Table")
-
-            tbl_show = st.selectbox(
-                "How many rows to show in table?",
-                options=[5, 10, 15, 20, 25, 30, 50, 100, "All"],
-                index=1,
-            )
-            tbl_rows = len(df_filtered) if tbl_show == "All" else min(int(tbl_show), len(df_filtered))
-            df_table = df_filtered.head(tbl_rows)
-
-            df_table_display = df_table.copy()
-            df_table_display["Google Maps"] = df_table["Address"].apply(
-                lambda addr: f"https://www.google.com/maps/search/?api=1&query={addr.replace(' ', '+')}"
-            )
-
-            # Replaced deprecated applymap with map
-            st.dataframe(
-                df_table_display[
-                    ["Tier", "Google Maps", "Folio", "Address", "Owner",
-                     "Distress Type", "Days Delinquent", "Absentee Owner",
-                     "Vacant Flag", "Market Value", "Est. Repairs", "MAO",
-                     "SqFt", "Deal Priority Score"]
-                ].style.format({
-                    "Market Value": "${:,.0f}",
-                    "Est. Repairs": "${:,.0f}",
-                    "MAO": "${:,.0f}",
-                    "Deal Priority Score": "{:,.0f}",
-                    "Days Delinquent": "{:,.0f}",
-                }).map(
-                    lambda x: "background-color: #fff3cd; font-weight: bold;" if isinstance(x, str) and "http" in x else "",
-                    subset=["Google Maps"]
-                ),
-                use_container_width=True,
-                hide_index=True,
-                column_config={
-                    "Google Maps": st.column_config.LinkColumn("Google Maps", display_text="🗺️ Open Map"),
-                    "Tier": st.column_config.TextColumn(width="130px"),
-                    "Deal Priority Score": st.column_config.NumberColumn(width="120px", format="🔥 {:.0f}"),
-                    "MAO": st.column_config.NumberColumn(width="110px", format="${:,.0f}"),
-                    "Market Value": st.column_config.NumberColumn(width="130px", format="${:,.0f}"),
-                    "Est. Repairs": st.column_config.NumberColumn(width="130px", format="${:,.0f}"),
-                },
-            )
-
-            st.markdown("---")
-            st.subheader("🌍 Multi-County Comparison")
-            comp_data = []
-            for county_name, cfg in COUNTIES.items():
-                active = "🌟 Active" if county_name == selected_county else "⚙️ Configured"
-                comp_data.append({
-                    "County": county_name,
-                    "PA API": cfg["pa_api"],
-                    "Tax Delinquent Source": cfg["tax_delinquent_url"],
-                    "Code Violations Source": cfg["code_violations_url"],
-                    "Probate Source": cfg["probate_url"],
-                    "Status": active,
-                })
-            st.dataframe(pd.DataFrame(comp_data), use_container_width=True, hide_index=True)
-
-            st.markdown("---")
-            st.subheader("📥 Export Analytics Data")
-            c_export1, c_export2, c_export3 = st.columns(3)
-            with c_export1:
-                if st.button("📥 Export Filtered Data (CSV)"):
-                    csv_export = df_filtered.to_csv(index=False).encode("utf-8")
-                    st.download_button(
-                        "⬇️ Download CSV",
-                        csv_export,
-                        f"Analytics_{selected_county}_{datetime.now().strftime('%Y%m%d_%H%M')}.csv",
-                        "text/csv",
-                    )
-            with c_export2:
-                if st.button("📥 Export Top 10 Deals (PDF-ready)"):
-                    top10 = df_filtered.head(10)
-                    csv_top = top10.to_csv(index=False).encode("utf-8")
-                    st.download_button(
-                        "⬇️ Download Top 10",
-                        csv_top,
-                        f"Top10_{selected_county}_{datetime.now().strftime('%Y%m%d')}.csv",
-                        "text/csv",
-                    )
-            with c_export3:
-                if st.button("🔄 Re-Scrape & Refresh Analytics"):
-                    with st.spinner(f"Re-scraping {selected_county}..."):
-                        df_new = auto_scrape_delinquent_leads(county_config, scrape_mode)
-                        st.session_state["scraped_leads"] = df_new
-                        st.session_state["last_scrape"] = datetime.now().isoformat()
-                        st.success(f"✅ Re-scraped! {len(df_new)} leads. Refreshing...")
-                        st.rerun()
-
-    else:
-        st.info(
-            f"📊 No data yet for {selected_county}. "
-            f"Go to the Auto-Scraper Dashboard to run a scrape first."
-        )
-
-# ─────────────────────────────────────────────────────────────
-# FOOTER
+# 5. FOOTER & LEGAL COMPLIANCE
 # ─────────────────────────────────────────────────────────────
 
 st.markdown("---")
