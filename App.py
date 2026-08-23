@@ -1,3 +1,4 @@
+from dataclasses import dataclass
 from datetime import datetime
 import os
 import sqlite3
@@ -5,7 +6,6 @@ import time
 import urllib.parse
 import uuid
 import pandas as pd
-from pydantic import BaseModel
 import streamlit as st
 
 # ==============================================================================
@@ -41,7 +41,8 @@ COUNTIES = {
 DB_NAME = "real_estate_engine.db"
 
 
-class ContractRequest(BaseModel):
+@dataclass
+class ContractRequest:
     seller_name: str
     buyer_name: str
     property_address: str
@@ -100,7 +101,7 @@ def send_wholesale_contract_handler(req: ContractRequest):
 
 
 # ==============================================================================
-# 2. 3030 FUTURISTIC HUD STYLING (CUSTOM CSS WITH TEXT AREA VISIBILITY FIX)
+# 2. 3030 FUTURISTIC HUD STYLING (CUSTOM CSS WITH VISIBILITY FIX)
 # ==============================================================================
 st.markdown(
     """
@@ -127,21 +128,6 @@ st.markdown(
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
         text-shadow: 0 0 20px rgba(0, 242, 254, 0.4);
-    }
-
-    .hud-card {
-        background: rgba(15, 23, 42, 0.65);
-        border: 1px solid rgba(0, 242, 254, 0.25);
-        border-radius: 16px;
-        padding: 20px;
-        backdrop-filter: blur(12px);
-        box-shadow: 0 0 15px rgba(0, 242, 254, 0.1);
-        transition: all 0.3s ease;
-    }
-    .hud-card:hover {
-        border-color: #00f2fe;
-        box-shadow: 0 0 25px rgba(0, 242, 254, 0.3);
-        transform: translateY(-2px);
     }
 
     .stTextInput input, .stSelectbox div[data-baseweb="select"], .stNumberInput input {
@@ -419,7 +405,7 @@ elif page == "4. Market Analytics & Calculator":
         buyer_entity_default, contract_details, calculated_mao
     )
 
-    # Render High-Contrast Contract Preview
+    # High-contrast Contract Preview Area
     st.text_area("Contract Preview", value=generated_text, height=350)
 
     st.markdown("---")
