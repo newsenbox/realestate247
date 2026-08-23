@@ -308,7 +308,7 @@ st.sidebar.markdown("""
     <div style='font-size:0.75rem; color:#64748b;'>
         <p>📡 <strong>System Status:</strong> <span style='color:#00ff88;'>ONLINE</span></p>
         <p>🎯 <strong>Active Counties:</strong> Miami-Dade, Broward, Palm Beach</p>
-        <p>⚡ <strong>Scraper Core:</strong> Multi-Node Active</p>
+        <p>🏡 <strong>Scraper Core:</strong> Multi-Node Active</p>
     </div>
 """, unsafe_allow_html=True)
 
@@ -359,7 +359,7 @@ if page == "1. Scraper Control & Search":
     st.markdown("<br>", unsafe_allow_html=True)
 
     # Search Control Panel
-    st.subheader("⚡ Quantum Search & Multi-Filter Controls")
+    st.subheader("🏡 Quantum Search & Multi-Filter Controls")
     c1, c2, c3, c4 = st.columns([2, 1, 1, 1])
     with c1:
         st.text_input("Target Query", placeholder="Address, Folio #, Zip, or Owner Name...")
@@ -527,7 +527,7 @@ elif page == "3. Deal Pipeline & CRM":
         c_mao = st.number_input("Maximum Allowable Offer (MAO) ($)", value=185000)
         c_rep = st.number_input("Estimated Repairs ($)", value=45000)
 
-        if st.button("⚡ GENERATE CONTRACT"):
+        if st.button("🏡 GENERATE CONTRACT"):
             sample_details = {
                 "Folio": c_fol,
                 "Address": c_addr,
