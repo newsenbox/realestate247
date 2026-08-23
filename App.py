@@ -547,14 +547,12 @@ elif page == "3. Deal Pipeline & CRM":
 # ==============================================================================
 # PAGE 4: AI MARKET ANALYTICS (WITH FULL ARV & MAO CALCULATOR)
 # ==============================================================================
-elif page == "4. Market Analytics":
+elif page == "4. AI Market Analytics":
     st.markdown(
         '<div class="glow-title">QUANTUM MARKET ANALYTICS</div>',
         unsafe_allow_html=True,
     )
-    st.caption(
-         ARV / MAO Deal Evaluation System"
-   
+    st.caption("ARV / MAO Deal Evaluation System")
 
     st.markdown("<br>", unsafe_allow_html=True)
 
