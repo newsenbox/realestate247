@@ -8,78 +8,15 @@ import streamlit as st
 # PAGE CONFIGURATION
 # ==============================================================================
 st.set_page_config(
-    page_title="⚡ 24_7 REAL ESTATE ENGINE 3030",
-    page_icon="⚡",
+    page_title="🏡 24_7 REAL ESTATE PROPERTY ENGINE ",
+    page_icon="🏡 ",
     layout="wide",
     initial_sidebar_state="expanded",
 )
 
-# ==============================================================================
-# 3030 CYBER / FUTURISTIC CUSTOM CSS
-# ==============================================================================
-st.markdown(
-    """
-    <style>
-    /* Global Cyberpunk Theme Overrides */
-    .stApp {
-        background-color: #050508;
-        color: #00f0ff;
-        font-family: 'Courier New', Courier, monospace;
-    }
-    
-    /* Headers & Glowing Text */
-    h1, h2, h3, h4 {
-        color: #00f0ff !important;
-        text-shadow: 0 0 10px #00f0ff, 0 0 20px #00f0ff;
-        font-family: 'Courier New', Courier, monospace !important;
-        text-transform: uppercase;
-        letter-spacing: 2px;
-    }
-
-    /* Streamlit Buttons */
-    .stButton>button {
-        background: #000000 !important;
-        color: #00f0ff !important;
-        border: 1px solid #00f0ff !important;
-        box-shadow: 0 0 10px #00f0ff;
-        font-family: 'Courier New', Courier, monospace !important;
-        font-weight: bold;
-        text-transform: uppercase;
-        transition: all 0.3s ease;
-    }
-    .stButton>button:hover {
-        background: #00f0ff !important;
-        color: #000000 !important;
-        box-shadow: 0 0 20px #00f0ff, 0 0 40px #00f0ff;
-    }
-
-    /* Sidebar Styling */
-    section[data-testid="stSidebar"] {
-        background-color: #0a0a0f !important;
-        border-right: 1px solid #00f0ff33;
-    }
-
-    /* Cards & Container boxes */
-    div[data-testid="stMetricValue"] {
-        color: #7000ff !important;
-        text-shadow: 0 0 10px #7000ff;
-        font-family: 'Courier New', Courier, monospace !important;
-    }
-    
-    /* Input Boxes */
-    .stTextInput input, .stNumberInput input, .stSelectbox div {
-        background-color: #0a0a0f !important;
-        color: #00f0ff !important;
-        border: 1px solid #00f0ff66 !important;
-    }
-    </style>
-    """,
-    unsafe_allow_html=True,
-)
-
 
 # ==============================================================================
-# CORE ENGINE HELPER FUNCTIONS (SCORING & CALCULATIONS)
+# CORE ENGINE HELPER FUNCTIONS (SCORING & CONTRACT GENERATION)
 # ==============================================================================
 def calculate_deal_priority(df):
     """Calculate a deal priority score safely with type sanitization."""
@@ -88,7 +25,7 @@ def calculate_deal_priority(df):
 
     df = df.copy()
 
-    # Ensure numeric types
+    # Ensure numeric types to prevent calculation runtime errors
     df["Market Value"] = pd.to_numeric(
         df.get("Market Value", 0), errors="coerce"
     ).fillna(0)
@@ -100,7 +37,7 @@ def calculate_deal_priority(df):
     ).fillna(0)
     df["MAO"] = pd.to_numeric(df.get("MAO", 0), errors="coerce").fillna(0)
 
-    # Delinquency Score
+    # Delinquency Score Calculation
     df["Delinquency Score"] = df["Days Delinquent"].apply(
         lambda x: min(100, x / 1825 * 100) if x > 0 else 0
     )
@@ -136,9 +73,9 @@ if "pipeline_leads" not in st.session_state:
 # ==============================================================================
 # SIDEBAR NAVIGATION
 # ==============================================================================
-st.sidebar.title("⚡ SYSTEM MATRIX 3030")
+st.sidebar.title("🏡 Engine Navigation")
 section = st.sidebar.radio(
-    "NAVIGATION TERMINAL:",
+    "Go to Section:",
     [
         "Section 1: Scraper Control",
         "Section 2: Skip Trace Terminal",
@@ -152,10 +89,8 @@ section = st.sidebar.radio(
 # SECTION 1: MULTI-COUNTY SCRAPER CONTROL
 # ==============================================================================
 if section == "Section 1: Scraper Control":
-    st.title("⚡ SECTION 1 // MULTI-COUNTY SCRAPER NODE")
-    st.markdown(
-        "`>>> INITIALIZING AUTONOMOUS DATA EXTRACTION AGENTS [3030 PROTOCOL]`"
-    )
+    st.title("Section 1: Multi-County Scraper Control")
+    st.markdown("Automated public record scrapers for South Florida counties.")
 
     col1, col2 = st.columns(2)
     with col1:
@@ -177,60 +112,59 @@ if section == "Section 1: Scraper Control":
             ],
         )
 
-    if st.button("🚀 ENGAGE SCRAPER PROTOCOL", use_container_width=True):
+    if st.button("🚀 Launch Scraper Engine", use_container_width=True):
         st.success(
-            f"SYSTEM EXECUTION: Autonomous scraper deployed for **{county}** on **{record_type}**!"
+            f"Autonomous scraper initiated for **{county}** on **{record_type}** records!"
         )
 
 # ==============================================================================
 # SECTION 2: SKIP TRACE LEAD TERMINAL
 # ==============================================================================
 elif section == "Section 2: Skip Trace Terminal":
-    st.title("⚡ SECTION 2 // SKIP TRACE MATRIX")
-    st.markdown("`>>> DIRECT DATA RETRIEVAL TERMINAL`")
+    st.title("Section 2: Skip Trace Lead Terminal")
+    st.markdown("Batch or single lookup for property owner phone and address.")
 
     search_term = st.text_input(
         "Input Target Address or Owner Name:",
         placeholder="e.g. John Doe, 123 NW 12th Ave, Miami, FL",
     )
 
-    if st.button("🔍 EXECUTE SKIP TRACE SCAN", use_container_width=True):
+    if st.button("🔍 Execute Skip Trace", use_container_width=True):
         if search_term:
-            st.info(f"Querying encrypted endpoints for: **{search_term}**...")
+            st.info(f"Running API skip trace for: **{search_term}**...")
             time.sleep(1)
-            st.success(
-                "DATA ACQUIRED: Phone numbers, emails, and owner details retrieved."
-            )
+            st.success("Skip trace completed! Phone numbers and email pulled.")
         else:
-            st.warning("ERROR: Query parameter empty.")
+            st.warning("Please enter a valid search term.")
 
 # ==============================================================================
 # SECTION 3: DEAL PIPELINE CRM
 # ==============================================================================
 elif section == "Section 3: Deal Pipeline CRM":
-    st.title("⚡ SECTION 3 // DEAL PIPELINE CRM")
-    st.markdown(
-        "`>>> LIVE LEAD VECTOR TABLE & TELEPHONY AGENT DISPATCH`"
-    )
+    st.title("Section 3: Deal Pipeline CRM")
+    st.markdown("Manage incoming leads and trigger automated voice/SMS outreach.")
 
+    # Calculate Priority Scores
     processed_df = calculate_deal_priority(st.session_state.pipeline_leads)
+
     st.dataframe(processed_df, use_container_width=True)
 
-    if st.button("📞 DISPATCH AI VOICE AGENT BATCH"):
-        st.success(
-            "TELEPHONY TRIGGERED: Autonomous AI Voice Bot dispatched to leads!"
-        )
+    if st.button("📞 Trigger AI Voice Call to Selected Leads"):
+        st.success("AI Voice Agent dispatched to target lead batch!")
 
 # ==============================================================================
 # SECTION 4: DEAL CALCULATOR (ARV & MAO)
 # ==============================================================================
 elif section == "Section 4: ARV & MAO Calculator":
-    st.title("⚡ SECTION 4 // MAO & ARV ALGORITHM")
-    st.markdown("`>>> QUANT ENGINE // PROFIT & OFFER MATRIX`")
+    st.title("Section 4: ARV & MAO Investment Calculator")
+    st.markdown(
+        "Evaluate property profitability using market value, repair estimates, and investor margin rules."
+    )
 
     col1, col2 = st.columns(2)
 
     with col1:
+        # Single Market Value input from $0 to $1,000,000 in $1,000 increments
         market_value = st.number_input(
             "Market Value / ARV ($0 - $1,000,000)",
             min_value=0,
@@ -252,9 +186,10 @@ elif section == "Section 4: ARV & MAO Calculator":
             "Investor Rule (%)", min_value=50, max_value=90, value=70, step=1
         )
 
+        # Calculation Logic: (ARV * Margin %) - Repairs
         rule_pct = investor_rule / 100.0
         calculated_mao = (market_value * rule_pct) - est_repairs
-        estimated_profit = market_value * 0.15
+        estimated_profit = market_value * 0.15  # 15% net profit target
 
     st.divider()
 
@@ -266,16 +201,16 @@ elif section == "Section 4: ARV & MAO Calculator":
         )
     with res_col2:
         st.metric(
-            label="Target Profit Threshold (15%)",
+            label="Estimated Profit Target (15%)",
             value=f"${max(0.0, estimated_profit):,.2f}",
         )
 
 # ==============================================================================
-# SECTION 5: PROPERTY INSPECTOR & HISTORY
+# SECTION 5: PROPERTY INSPECTOR & HISTORY (WITH HIDDEN SYSTEM MATRIX)
 # ==============================================================================
 elif section == "Section 5: Property Inspector":
-    st.title("⚡ SECTION 5 // VISUAL RECON & HISTORY")
-    st.markdown("`>>> SATELLITE OPTICAL SCAN & COUNTY REGISTRY DATA`")
+    st.title("Section 5: Property Inspector & Sale History")
+    st.markdown("Visual property verification via satellite maps and county sales history.")
 
     address_input = st.text_input(
         "Property Address Search:",
@@ -288,7 +223,7 @@ elif section == "Section 5: Property Inspector":
     col1, col2 = st.columns([1.2, 1])
 
     with col1:
-        st.subheader("Satellite Recon View")
+        st.subheader("Satellite View")
         encoded_address = urllib.parse.quote(
             address_input if address_input else "Miami Dade County FL"
         )
@@ -297,7 +232,7 @@ elif section == "Section 5: Property Inspector":
         st.components.v1.iframe(map_url, height=380, scrolling=False)
 
     with col2:
-        st.subheader("County Registry Records")
+        st.subheader("Last Sale & County Records")
         st.info("""
         **Last Purchase Price:** $185,000.00  
         **Last Sale Date:** 04/12/2018  
@@ -308,8 +243,11 @@ elif section == "Section 5: Property Inspector":
 
     st.divider()
 
-    with st.expander("⚙️ SYSTEM API MATRIX (BACKEND KEYS)"):
-        st.caption("ENCRYPTED ADMIN KEYS")
+    # HIDDEN ACCORDION FOR SYSTEM API MATRIX ADMIN SETTINGS
+    with st.expander("⚙️ System API Matrix (Backend Admin Configuration)"):
+        st.caption(
+            "Keys are hidden from the primary view to prevent exposure."
+        )
         st.text_input(
             "Scraper Node Webhook URL:",
             value="https://api.yourvps.com/scraper/v1",
@@ -329,36 +267,34 @@ elif section == "Section 5: Property Inspector":
 # ==============================================================================
 # FOOTER & LEGAL COMPLIANCE
 # ==============================================================================
+
 st.markdown("---")
-st.markdown(
-    f"""
-    <div style="text-align: center; color: #00f0ff; font-family: monospace; padding: 10px; border: 1px solid #00f0ff33; background: #0a0a0f;">
-        ⚡ 24_7 REAL ESTATE PROPERTY ENGINE [v3030.1] · Multi-County · 
-        Last Scrape: <strong>{st.session_state.get('last_scrape', 'Never')}</strong> · 
-        &copy; <strong>WALTONEXLLC</strong>
-    </div>
-    """,
-    unsafe_allow_html=True,
+st.caption(
+    f"🏡 24_7 Real Estate Property Engine · Multi-County · "
+    f"Last scrape: {st.session_state.get('last_scrape', 'Never')} · "
+    f"© WALTONEXLLC"
 )
 
 st.sidebar.markdown("---")
 st.sidebar.markdown(
     """
-    <div style="font-family: monospace; font-size: 0.8rem; color: #a0a0a0;">
-    <strong style="color: #00f0ff;">LEGAL & COMPLIANCE [3030]</strong><br><br>
+    **Legal & Compliance**
 
-    <b>1. Florida Wholesaling Licensing (Ch. 475)</b><br>
-    Contract assignments are legal in FL. Market your equitable interest, not the property itself.<br><br>
+    1. **Florida Wholesaling Licensing (Chapter 475)**  
+       Contract assignments are legal in Florida. Market your equitable interest,  
+       not the property itself, to avoid acting as an unlicensed broker.
 
-    <b>2. DNC & TCPA Compliance</b><br>
-    Scrub contacts against National DNC Registry prior to voice/SMS outreach.<br><br>
+    2. **Do Not Call (DNC) Compliance**  
+       Scrub all owner contacts against the National DNC Registry before  
+       initiating calls or SMS. Comply with TCPA regulations.
 
-    <b>3. E-Signature Validity</b><br>
-    Legally binding under FL UETA (FL Stat § 668.50) and Federal ESIGN Act.<br><br>
+    3. **E-Signature Validity**  
+       Under Florida UETA (FL Stat § 668.50) and the Federal ESIGN Act,  
+       electronic canvas signatures are legally enforceable when paired with  
+       consent and execution timestamps.
 
-    <b>4. Multi-County Data Pipelines</b><br>
-    Configured for direct Property Appraiser & Tax Collector API endpoints.
-    </div>
-    """,
-    unsafe_allow_html=True,
+    4. **Multi-County Data Sources**  
+       Each county has its own Property Appraiser API, tax collector, code  
+       enforcement, and probate court. Configure county endpoints in the sidebar.
+    """
 )
