@@ -5,7 +5,7 @@ import pandas as pd
 import streamlit as st
 
 # ==============================================================================
-# 1. PAGE CONFIGURATION
+# 1. PAGE CONFIGURATION & COUNTY CONFIGURATION
 # ==============================================================================
 st.set_page_config(
     page_title="⚡ 24_7 REAL ESTATE ENGINE 3030",
@@ -13,6 +13,25 @@ st.set_page_config(
     layout="wide",
     initial_sidebar_state="expanded",
 )
+
+# County Configurations Dictionary
+COUNTIES = {
+    "Miami-Dade County, FL": {
+        "fips": "12086",
+        "portal_url": "https://www.miamidade.gov/pa/",
+        "tax_url": "https://miamidade.realforeclose.com/",
+    },
+    "Broward County, FL": {
+        "fips": "12011",
+        "portal_url": "https://www.bcpa.net/",
+        "tax_url": "https://broward.realforeclose.com/",
+    },
+    "Palm Beach County, FL": {
+        "fips": "12099",
+        "portal_url": "https://www.pbcgov.org/papa/",
+        "tax_url": "https://palmbeach.realforeclose.com/",
+    },
+}
 
 # ==============================================================================
 # 2. 3030 FUTURISTIC HUD STYLING (CUSTOM CSS)
@@ -182,7 +201,7 @@ st.markdown(
 )
 
 # ==============================================================================
-# 3. CORE ENGINE HELPER FUNCTIONS (PRIORITY SCORING)
+# 3. CORE ENGINE HELPER FUNCTIONS
 # ==============================================================================
 def calculate_deal_priority(df):
     """Calculates priority scores based on delinquency days and absentee status."""
@@ -217,6 +236,53 @@ def calculate_deal_priority(df):
         df["Absentee Score"] = 0
 
     return df
+
+def generate_assignment_contract(buyer_name, details, mao):
+    """Generates the Florida Assignment of Real Estate Purchase & Sale Contract."""
+    today = datetime.now().strftime("%B %d, %Y")
+    return f"""================================================================================
+          FLORIDA ASSIGNMENT OF REAL ESTATE PURCHASE & SALE CONTRACT
+================================================================================
+Date: {today}
+County: {details.get('County', 'N/A')}
+Parcel Folio Number: {details.get('Folio', 'N/A')}
+Property Address: {details.get('Address', 'N/A')}
+Zip Code: {details.get('Zip Code', 'N/A')}
+
+1. PARTIES:
+   Assignor (Wholesaler/Buyer): {buyer_name}
+   Assignee (Seller/Owner of Record): {details.get('Owner', 'N/A')}
+
+2. PROPERTY:
+   The property located at {details.get('Address', 'N/A')}, {details.get('Zip Code', '')},
+   County of {details.get('County', '')}, Florida.
+   Parcel ID / Folio: {details.get('Folio', 'N/A')}
+
+3. AGREED PURCHASE PRICE:
+   The Assignee agrees to purchase the Property for the sum of:
+   ${details.get('Market Value', 0):,.2f} (Market Value)
+
+4. ASSIGNMENT TERMS:
+   Assignor transfers all equitable rights, title, and interest in the purchase
+   agreement for the Property located at the above address.
+
+   - Agreed Target Purchase Price (MAO): ${mao:,.2f}
+   - Estimated Assignment Fee: $15,000.00
+   - Estimated Repair Costs: ${details.get('Est. Repairs', 0):,.2f}
+   - Square Footage: {details.get('SqFt', 0):,.0f} sq ft
+
+5. CLOSING:
+   Closing shall occur within 30 days of the effective date of this contract.
+   Closing costs shall be divided equally between Assignor and Assignee.
+
+6. GOVERNING LAW:
+   Governed under the laws of the State of Florida (Chapter 475 compliance).
+
+7. E-SIGNATURE:
+   By signing below, both parties execute the binding terms of this contract
+   electronically under the Florida UETA (FL Stat § 668.50) and Federal ESIGN Act.
+
+================================================================================"""
 
 # ==============================================================================
 # 4. INITIALIZE SESSION STATE
@@ -256,7 +322,7 @@ if "pipeline_leads" not in st.session_state:
     ])
 
 # ==============================================================================
-# 5. NAVIGATION SIDEBAR
+# 5. NAVIGATION & SIDEBAR CONTROLS
 # ==============================================================================
 st.sidebar.markdown(
     """
@@ -280,8 +346,59 @@ page = st.sidebar.radio(
 )
 
 st.sidebar.markdown("---")
+st.sidebar.header("⚙️ Engine Controls")
 
-# SIDEBAR HARDWARE / SYSTEM CONTROLS
+selected_county = st.sidebar.selectbox(
+    "📍 Select County",
+    options=list(COUNTIES.keys()),
+    index=0,
+)
+county_config = COUNTIES[selected_county]
+
+# Cache flush on county switch
+st.session_state.setdefault("current_county", selected_county)
+if st.session_state["current_county"] != selected_county:
+    st.session_state["scraped_leads"] = None
+    st.session_state["current_county"] = selected_county
+
+st.sidebar.markdown("---")
+
+scrape_mode = st.sidebar.radio(
+    "🔍 Scrape Mode",
+    ["Manual (One-Click)", "Background Pipeline (Scheduled)"],
+)
+
+if scrape_mode == "Background Pipeline (Scheduled)":
+    run_background = st.sidebar.checkbox("▶️ Run background pipeline", value=True)
+    if run_background:
+        st.sidebar.info("3030 Engine Active: Auto-scraping every 30 mins.")
+else:
+    st.sidebar.warning("Manual mode — click the scrape button when ready.")
+
+st.sidebar.markdown("---")
+
+st.sidebar.subheader("📊 Filter Leads")
+min_market_val = st.sidebar.slider(
+    "Minimum Market Value ($)", min_value=0, max_value=500000, value=0, step=10000
+)
+max_market_val = st.sidebar.slider(
+    "Maximum Market Value ($)", min_value=0, max_value=2000000, value=500000, step=10000
+)
+min_mao = st.sidebar.slider(
+    "Minimum MAO ($)", min_value=0, max_value=100000, value=0, step=5000
+)
+show_tax_delinquent_only = st.sidebar.checkbox("Tax Delinquent Only", value=False)
+show_abandoned_only = st.sidebar.checkbox("Abandoned / Vacant Only", value=False)
+
+st.sidebar.markdown("---")
+st.sidebar.subheader("👤 Account")
+buyer_entity_default = st.sidebar.text_input(
+    "Wholesaler / Entity Name",
+    value="360 New Beginning LLC",
+    help="This will be the Assignor on all generated contracts.",
+)
+
+st.sidebar.markdown("---")
 st.sidebar.subheader("🎛️ System & Node Status")
 st.sidebar.markdown(
     """
@@ -303,7 +420,7 @@ if page == "1. Scraper Control & Search":
         '<div class="glow-title">SYSTEM SCRAPER HUB // 3030</div>',
         unsafe_allow_html=True,
     )
-    st.caption("Live Tax Delinquency, Probate & Distress Property Scanner")
+    st.caption(f"Live Tax Delinquency, Probate & Distress Property Scanner — Zone: {selected_county}")
     st.markdown("<br>", unsafe_allow_html=True)
 
     # Top Metrics
@@ -366,7 +483,8 @@ if page == "1. Scraper Control & Search":
     with c2:
         st.selectbox(
             "County Zone",
-            ["Miami-Dade County, FL", "Broward County, FL", "Palm Beach County, FL"],
+            list(COUNTIES.keys()),
+            index=list(COUNTIES.keys()).index(selected_county),
         )
     with c3:
         st.selectbox(
@@ -392,7 +510,7 @@ if page == "1. Scraper Control & Search":
     with sc_col1:
         if st.button("🚀 INITIATE SCRAPE", use_container_width=True):
             st.session_state["last_scrape"] = time.strftime("%H:%M:%S EST")
-            st.toast("Scraper activated! Scanning county public portals...")
+            st.toast(f"Scraper activated for {selected_county}! Scanning public portals...")
 
     st.markdown("---")
 
@@ -472,9 +590,7 @@ elif page == "2. Skip Trace & Contact Terminal":
         '<div class="glow-title">SKIP TRACE TERMINAL // 3030</div>',
         unsafe_allow_html=True,
     )
-    st.caption(
-        "Deep-Search Owner Intelligence, Phone Matrix & Optical Recon Map"
-    )
+    st.caption("Deep-Search Owner Intelligence, Phone Matrix & Optical Recon Map")
     st.markdown("<br>", unsafe_allow_html=True)
 
     col_input, col_action = st.columns([3, 1])
@@ -593,14 +709,14 @@ elif page == "3. Deal Pipeline & CRM":
 
 
 # ==============================================================================
-# PAGE 4: AI MARKET ANALYTICS (WITH FULL ARV & MAO CALCULATOR)
+# PAGE 4: AI MARKET ANALYTICS (WITH CALCULATOR & CONTRACT GENERATOR)
 # ==============================================================================
 elif page == "4. AI Market Analytics & Calculator":
     st.markdown(
-        '<div class="glow-title">QUANTUM MARKET ANALYTICS</div>',
+        '<div class="glow-title">QUANTUM MARKET ANALYTICS & CONTRACT GENERATOR</div>',
         unsafe_allow_html=True,
     )
-    st.caption("ARV / MAO Deal Evaluation System")
+    st.caption("ARV / MAO Deal Evaluation System & Automated Legal Generator")
 
     st.markdown("<br>", unsafe_allow_html=True)
 
@@ -652,6 +768,46 @@ elif page == "4. AI Market Analytics & Calculator":
             value=f"${max(0.0, estimated_profit):,.2f}",
         )
 
+    st.markdown("---")
+
+    # CONTRACT GENERATOR SECTION
+    st.subheader("📄 Florida Assignment Contract Generator")
+    st.caption("Auto-fills using your active calculation and account defaults")
+
+    g_col1, g_col2 = st.columns(2)
+    with g_col1:
+        prop_address = st.text_input("Property Address", value="1245 NW 36th St, Miami, FL")
+        prop_zip = st.text_input("Zip Code", value="33142")
+        prop_folio = st.text_input("Parcel ID / Folio Number", value="30-3115-002")
+    with g_col2:
+        prop_owner = st.text_input("Owner of Record (Assignee)", value="Johnathan H. Doe")
+        prop_county = st.text_input("County", value=selected_county.split(",")[0])
+        prop_sqft = st.number_input("Square Feet", value=1850, step=50)
+
+    contract_details = {
+        "Address": prop_address,
+        "Zip Code": prop_zip,
+        "Folio": prop_folio,
+        "Owner": prop_owner,
+        "County": prop_county,
+        "SqFt": prop_sqft,
+        "Market Value": market_value,
+        "Est. Repairs": est_repairs,
+    }
+
+    generated_text = generate_assignment_contract(
+        buyer_entity_default, contract_details, calculated_mao
+    )
+
+    st.text_area("Contract Preview", value=generated_text, height=350)
+
+    st.download_button(
+        label="📥 DOWNLOAD CONTRACT (.TXT)",
+        data=generated_text,
+        file_name=f"FL_Assignment_Contract_{prop_folio}.txt",
+        mime="text/plain",
+    )
+
 
 # ==============================================================================
 # PAGE 5: SYSTEM & API MATRIX
@@ -699,7 +855,7 @@ st.caption(
     f"© WALTONEXLLC & 360 NEW BEGINNING LLC"
 )
 
-# This injects the floating Legal & Compliance Matrix across all pages
+# Floating Legal & Compliance Matrix
 st.markdown(
     """
     <div class="floating-footer">
