@@ -4,10 +4,10 @@ import pandas as pd
 import streamlit as st
 
 # ==============================================================================
-# PAGE CONFIGURATION
+# 1. PAGE CONFIGURATION
 # ==============================================================================
 st.set_page_config(
-    page_title="24_7 REAL ESTATE PROPERTY ENGINE ",
+    page_title="24_7 REAL ESTATE PROPERTY ENGINE",
     page_icon="⚡",
     layout="wide",
     initial_sidebar_state="expanded",
@@ -15,16 +15,16 @@ st.set_page_config(
 
 
 # ==============================================================================
-# CORE ENGINE HELPER FUNCTIONS (SCORING & CALCULATIONS)
+# 2. CORE ENGINE HELPER FUNCTIONS (PRIORITY SCORING)
 # ==============================================================================
 def calculate_deal_priority(df):
-    """Calculate a deal priority score safely with type sanitization."""
+    """Calculates priority scores based on delinquency days and absentee status."""
     if df.empty:
         return df
 
     df = df.copy()
 
-    # Ensure numeric types to prevent calculation runtime errors
+    # Data sanitization to avoid calculation errors
     df["Market Value"] = pd.to_numeric(
         df.get("Market Value", 0), errors="coerce"
     ).fillna(0)
@@ -36,12 +36,12 @@ def calculate_deal_priority(df):
     ).fillna(0)
     df["MAO"] = pd.to_numeric(df.get("MAO", 0), errors="coerce").fillna(0)
 
-    # Delinquency Score Calculation
+    # Calculate Delinquency Score (0 - 100 based on 5-year cap)
     df["Delinquency Score"] = df["Days Delinquent"].apply(
-        lambda x: min(100, x / 1825 * 100) if x > 0 else 0
+        lambda x: min(100, (x / 1825) * 100) if x > 0 else 0
     )
 
-    # Cleaned Absentee Score Logic
+    # Absentee Score
     if "Absentee Owner" in df.columns:
         df["Absentee Score"] = df["Absentee Owner"].apply(
             lambda x: 100 if bool(x) else 0
@@ -53,7 +53,7 @@ def calculate_deal_priority(df):
 
 
 # ==============================================================================
-# INITIALIZE SESSION STATE FOR DEAL PIPELINE
+# 3. INITIALIZE SESSION STATE
 # ==============================================================================
 if "pipeline_leads" not in st.session_state:
     st.session_state.pipeline_leads = pd.DataFrame([
@@ -90,22 +90,19 @@ if "pipeline_leads" not in st.session_state:
     ])
 
 # ==============================================================================
-# 3030 FUTURISTIC HUD STYLING (CUSTOM CSS)
+# 4. 3030 FUTURISTIC HUD STYLING (CUSTOM CSS)
 # ==============================================================================
 st.markdown(
     """
     <style>
-    /* Import Futuristic Fonts */
     @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;800;900&family=Rajdhani:wght@500;600;700&display=swap');
 
-    /* Global Dark Cyber Theme */
     .stApp {
         background: radial-gradient(circle at 50% 10%, #0d1117, #05070a, #020305);
         color: #e2e8f0;
         font-family: 'Rajdhani', sans-serif;
     }
 
-    /* Neon Titles & Headings */
     h1, h2, h3, h4 {
         font-family: 'Orbitron', sans-serif !important;
         letter-spacing: 1.5px;
@@ -121,7 +118,6 @@ st.markdown(
         text-shadow: 0 0 20px rgba(0, 242, 254, 0.4);
     }
 
-    /* Futuristic HUD Metric Cards */
     .hud-card {
         background: rgba(15, 23, 42, 0.65);
         border: 1px solid rgba(0, 242, 254, 0.25);
@@ -152,7 +148,6 @@ st.markdown(
         text-shadow: 0 0 10px rgba(255, 255, 255, 0.2);
     }
 
-    /* Neon Property Deal Cards */
     .deal-card {
         background: rgba(10, 15, 30, 0.8);
         border: 1px solid rgba(59, 130, 246, 0.3);
@@ -160,14 +155,12 @@ st.markdown(
         padding: 20px;
         margin-bottom: 20px;
         box-shadow: inset 0 0 15px rgba(0, 242, 254, 0.05);
-        position: relative;
     }
     .deal-card-hot {
         border-color: rgba(244, 63, 94, 0.6);
         box-shadow: 0 0 15px rgba(244, 63, 94, 0.15);
     }
 
-    /* Badges */
     .badge-neon-red {
         background: rgba(244, 63, 94, 0.15);
         color: #ff4b72;
@@ -177,7 +170,6 @@ st.markdown(
         font-size: 0.65rem;
         font-weight: 800;
         font-family: 'Orbitron', sans-serif;
-        text-shadow: 0 0 8px rgba(255, 75, 114, 0.5);
     }
     .badge-neon-cyan {
         background: rgba(0, 242, 254, 0.15);
@@ -188,10 +180,8 @@ st.markdown(
         font-size: 0.65rem;
         font-weight: 800;
         font-family: 'Orbitron', sans-serif;
-        text-shadow: 0 0 8px rgba(0, 242, 254, 0.5);
     }
 
-    /* Custom Input and Select Box Tweaks */
     .stTextInput input, .stSelectbox div[data-baseweb="select"], .stNumberInput input {
         background-color: #0b132b !important;
         color: #00f2fe !important;
@@ -199,7 +189,6 @@ st.markdown(
         border-radius: 10px !important;
     }
     
-    /* Buttons */
     .stButton>button {
         background: linear-gradient(135deg, #00f2fe 0%, #4facfe 100%) !important;
         color: #020305 !important;
@@ -208,7 +197,6 @@ st.markdown(
         border: none !important;
         border-radius: 10px !important;
         box-shadow: 0 0 15px rgba(0, 242, 254, 0.4) !important;
-        transition: all 0.3s ease !important;
     }
     .stButton>button:hover {
         box-shadow: 0 0 25px rgba(0, 242, 254, 0.8) !important;
@@ -221,7 +209,7 @@ st.markdown(
 
 
 # ==============================================================================
-# NAVIGATION SIDEBAR (THE 5 PAGES)
+# 5. NAVIGATION SIDEBAR
 # ==============================================================================
 st.sidebar.markdown(
     """
@@ -245,12 +233,16 @@ page = st.sidebar.radio(
 )
 
 st.sidebar.markdown("---")
+
+# SIDEBAR HARDWARE / SYSTEM CONTROLS
+st.sidebar.subheader("🎛️ System & Node Status")
 st.sidebar.markdown(
     """
-    <div style='font-size:0.75rem; color:#64748b;'>
+    <div style='font-size:0.8rem; color:#cbd5e1;'>
         <p>📡 <strong>System Status:</strong> <span style='color:#00ff88;'>ONLINE</span></p>
         <p>🎯 <strong>Active Counties:</strong> Miami-Dade, Broward, Palm Beach</p>
         <p>⚡ <strong>Scraper Core:</strong> Multi-Node Active</p>
+        <p>🎙️ <strong>Voice Agent:</strong> Retell AI Enabled</p>
     </div>
 """,
     unsafe_allow_html=True,
@@ -268,7 +260,7 @@ if page == "1. Scraper Control & Search":
     st.caption("Live Tax Delinquency, Probate & Distress Property Scanner")
     st.markdown("<br>", unsafe_allow_html=True)
 
-    # Top HUD Stats
+    # Top Metrics
     m1, m2, m3, m4 = st.columns(4)
     with m1:
         st.markdown(
@@ -317,7 +309,7 @@ if page == "1. Scraper Control & Search":
 
     st.markdown("<br>", unsafe_allow_html=True)
 
-    # Search Control Panel
+    # Search & Filters
     st.subheader("⚡ Quantum Search & Multi-Filter Controls")
     c1, c2, c3, c4 = st.columns([2, 1, 1, 1])
     with c1:
@@ -359,7 +351,7 @@ if page == "1. Scraper Control & Search":
 
     st.markdown("---")
 
-    # High Impact Deal Cards
+    # High Priority Cards
     st.subheader("🔥 Prioritized Target Cards")
     dc1, dc2, dc3 = st.columns(3)
 
@@ -367,9 +359,7 @@ if page == "1. Scraper Control & Search":
         st.markdown(
             """
             <div class="deal-card deal-card-hot">
-                <div style="display:flex; justify-between; align-items:center;">
-                    <span class="badge-neon-red">CRITICAL • 3+ YR TAX DEBT</span>
-                </div>
+                <span class="badge-neon-red">CRITICAL • 3+ YR TAX DEBT</span>
                 <h3 style="color:#ffffff; margin-top:10px; font-size:1.3rem;">$24,800 <span style="font-size:0.8rem; color:#ff4b72;">TAX OWED</span></h3>
                 <p style="color:#00f2fe; font-weight:700; margin:0;">1245 NW 36th St</p>
                 <p style="color:#64748b; font-size:0.8rem;">Miami, FL 33142 • Folio #30-3115-002</p>
@@ -430,14 +420,16 @@ if page == "1. Scraper Control & Search":
 
 
 # ==============================================================================
-# PAGE 2: SKIP TRACE & CONTACT TERMINAL (WITH SATELLITE & COUNTY RECON)
+# PAGE 2: SKIP TRACE & CONTACT TERMINAL
 # ==============================================================================
 elif page == "2. Skip Trace & Contact Terminal":
     st.markdown(
         '<div class="glow-title">SKIP TRACE TERMINAL // 3030</div>',
         unsafe_allow_html=True,
     )
-    st.caption("Deep-Search Owner Intelligence & Phone/Email Matrix")
+    st.caption(
+        "Deep-Search Owner Intelligence, Phone Matrix & Optical Recon Map"
+    )
     st.markdown("<br>", unsafe_allow_html=True)
 
     col_input, col_action = st.columns([3, 1])
@@ -451,9 +443,7 @@ elif page == "2. Skip Trace & Contact Terminal":
         run_trace = st.button("RUN DEEP SKIP TRACE", use_container_width=True)
 
     if run_trace:
-        with st.spinner(
-            "Extracting phone numbers, emails, relative ties, and LLC structures..."
-        ):
+        with st.spinner("Extracting owner ties, relative networks, and contact records..."):
             time.sleep(1)
 
     st.markdown(
@@ -488,7 +478,7 @@ elif page == "2. Skip Trace & Contact Terminal":
 
     st.markdown("<br>", unsafe_allow_html=True)
 
-    # PROPERTY INSPECTOR SATELLITE MAP & COUNTY SALES RECON
+    # OPTICAL RECON SATELLITE MAP & RECON DATA
     st.subheader("🛰️ Property Optical Recon & Sales History")
     recon_col1, recon_col2 = st.columns([1.2, 1])
 
@@ -511,16 +501,16 @@ elif page == "2. Skip Trace & Contact Terminal":
         """)
 
     st.markdown("<br>", unsafe_allow_html=True)
-    st.subheader("📞 Instant AI Voice Agent Trigger")
+    st.subheader("📞 Instant AI Voice & Outreach Dispatch")
     v1, v2 = st.columns(2)
     with v1:
         if st.button("🎙️ Trigger AI Voice Agent Call", use_container_width=True):
-            st.success("AI Voice Agent triggered and dispatched!")
+            st.success("AI Voice Agent dispatched via Retell API!")
     with v2:
         if st.button(
             "💬 Send Automated SMS Offer Script", use_container_width=True
         ):
-            st.success("SMS Offer Script transmitted!")
+            st.success("SMS Offer transmitted to owner primary line!")
 
 
 # ==============================================================================
@@ -531,7 +521,7 @@ elif page == "3. Deal Pipeline & CRM":
         '<div class="glow-title">DEAL PIPELINE CRM // 3030</div>',
         unsafe_allow_html=True,
     )
-    st.caption("Active Acquisition Tracker & Lead Conversion Stage")
+    st.caption("Active Acquisition Tracker & Lead Conversion Pipeline")
     st.markdown("<br>", unsafe_allow_html=True)
 
     col1, col2, col3, col4 = st.columns(4)
@@ -555,16 +545,19 @@ elif page == "3. Deal Pipeline & CRM":
 
 
 # ==============================================================================
-# PAGE 4: AI MARKET ANALYTICS (WITH ARV & MAO CALCULATOR)
+# PAGE 4: AI MARKET ANALYTICS (WITH FULL ARV & MAO CALCULATOR)
 # ==============================================================================
 elif page == "4. AI Market Analytics":
     st.markdown(
         '<div class="glow-title">QUANTUM MARKET ANALYTICS</div>',
         unsafe_allow_html=True,
     )
-    st.caption("Predictive Distress Trends & County Volume Analysis")
+    st.caption(
+        "Predictive Distress Trends & ARV / MAO Deal Evaluation System"
+    )
     st.markdown("<br>", unsafe_allow_html=True)
 
+    # Volume Chart
     chart_data = pd.DataFrame({
         "Month": ["Jan", "Feb", "Mar", "Apr", "May", "Jun"],
         "Miami-Dade Leads": [320, 450, 510, 680, 890, 1120],
@@ -575,17 +568,17 @@ elif page == "4. AI Market Analytics":
 
     st.markdown("<br>", unsafe_allow_html=True)
 
-    # ARV & MAO INVESTMENT CALCULATOR
+    # ARV & MAO INVESTMENT CALCULATOR (0 - 1,000,000 RANGE)
     st.subheader("🧮 ARV & MAO Investment Deal Calculator")
     calc_col1, calc_col2 = st.columns(2)
 
     with calc_col1:
-        market_value = st.number_input(
-            "Market Value / ARV ($0 - $1,000,000)",
+        market_value = st.slider(
+            "After Repair Value (ARV) / Market Value ($0 - $1,000,000)",
             min_value=0,
             max_value=1000000,
             value=300000,
-            step=1000,
+            step=5000,
         )
 
         est_repairs = st.number_input(
@@ -593,17 +586,23 @@ elif page == "4. AI Market Analytics":
             min_value=0,
             max_value=500000,
             value=40000,
-            step=500,
+            step=1000,
         )
 
     with calc_col2:
-        investor_rule = st.number_input(
-            "Investor Rule (%)", min_value=50, max_value=90, value=70, step=1
+        investor_rule = st.slider(
+            "Investor Rule Target (%)",
+            min_value=50,
+            max_value=90,
+            value=70,
+            step=1,
         )
 
         rule_pct = investor_rule / 100.0
         calculated_mao = (market_value * rule_pct) - est_repairs
         estimated_profit = market_value * 0.15
+
+    st.markdown("<br>", unsafe_allow_html=True)
 
     res_col1, res_col2 = st.columns(2)
     with res_col1:
@@ -613,7 +612,7 @@ elif page == "4. AI Market Analytics":
         )
     with res_col2:
         st.metric(
-            label="Estimated Profit Target (15%)",
+            label="Target Wholesale Assignment Fee (15%)",
             value=f"${max(0.0, estimated_profit):,.2f}",
         )
 
@@ -644,41 +643,48 @@ elif page == "5. System & API Matrix":
         value="tw_token_990182371",
         type="password",
     )
+    st.text_input(
+        "OpenAI / DeepSeek Intelligence Key",
+        value="sk_or_v1_9921029318",
+        type="password",
+    )
 
     if st.button("SAVE SYSTEM CONFIGURATION"):
-        st.success("Configuration updated and deployed across all nodes!")
+        st.success("Configuration updated and deployed across all live nodes!")
 
 
 # ==============================================================================
-# FOOTER & LEGAL COMPLIANCE
+# FOOTER & LEGAL COMPLIANCE MATRIX
 # ==============================================================================
 st.markdown("---")
+
 st.caption(
     f"🏡 24_7 Real Estate Property Engine · Multi-County · "
-    f"Last scrape: {st.session_state.get('last_scrape', 'Never')} · "
+    f"Last scrape execution: {st.session_state.get('last_scrape', 'Never')} · "
     f"© WALTONEXLLC & 360 NEW BEGINNING LLC"
 )
 
 st.sidebar.markdown("---")
 st.sidebar.markdown(
     """
-    **Legal & Compliance**
+    **Legal & Compliance Matrix**
 
     1. **Florida Wholesaling Licensing (Chapter 475)**  
-       Contract assignments are legal in Florida. Market your equitable interest,  
-       not the property itself, to avoid acting as an unlicensed broker.
+       Contract assignments are fully legal under Florida law. Market your equitable interest  
+       in the contract, not the property title itself, to ensure compliance without requiring  
+       a real estate broker license.
 
     2. **Do Not Call (DNC) Compliance**  
        Scrub all owner contacts against the National DNC Registry before  
-       initiating calls or SMS. Comply with TCPA regulations.
+       initiating manual or automated outbound calls/SMS. Always remain TCPA compliant.
 
     3. **E-Signature Validity**  
        Under Florida UETA (FL Stat § 668.50) and the Federal ESIGN Act,  
-       electronic canvas signatures are legally enforceable when paired with  
-       consent and execution timestamps.
+       electronic canvas signatures are legally binding when accompanied by  
+       explicit consent and full execution timestamps.
 
-    4. **Multi-County Data Sources**  
-       Each county has its own Property Appraiser API, tax collector, code  
-       enforcement, and probate court. Configure county endpoints in the sidebar.
+    4. **Multi-County Data Architecture**  
+       Each county maintains separate endpoints for Property Appraisers, Tax Collectors,  
+       Code Enforcement, and Probate Courts. Configure individual node endpoints in Page 5.
     """
 )
