@@ -4,44 +4,30 @@ import numpy as np
 from datetime import datetime
 
 # ─────────────────────────────────────────────────────────────
-# 1. PAGE CONFIGURATION & INITIALIZATION
+# CONFIG & SETUP
 # ─────────────────────────────────────────────────────────────
 
 st.set_page_config(
-    page_title="24_7 Real Estate Property Engine | WALTONEXLLC",
+    page_title="24_7 Real Estate Property Engine",
     page_icon="🏡",
-    layout="wide",
-    initial_sidebar_state="expanded"
+    layout="wide"
 )
 
-# Supported Florida Counties Endpoint Matrix
+# Dummy county dictionary for reference setup
 COUNTIES = {
-    "Miami-Dade": {
-        "appraiser_url": "https://www.miamidade.gov/pa/",
-        "tax_url": "https://miamidade.realforeclose.com/",
-        "code": "3030_MD"
-    },
-    "Broward": {
-        "appraiser_url": "https://bcpa.net/",
-        "tax_url": "https://broward.realforeclose.com/",
-        "code": "3030_BR"
-    },
-    "Palm Beach": {
-        "appraiser_url": "https://www.pbcgov.org/papa/",
-        "tax_url": "https://palmbeach.realforeclose.com/",
-        "code": "3030_PB"
-    }
+    "Miami-Dade": {"appraiser_url": "https://www.miamidade.gov/pa/"},
+    "Broward": {"appraiser_url": "https://bcpa.net/"},
+    "Palm Beach": {"appraiser_url": "https://www.pbcgov.org/papa/"}
 }
 
 
 # ─────────────────────────────────────────────────────────────
-# 2. CORE ENGINE FUNCTIONS (SCORING & CONTRACTS)
+# FEATURE 1: EQUITY & NEGLECT MULTIPLIER
 # ─────────────────────────────────────────────────────────────
 
 def calculate_deal_priority(df):
     """
-    Calculates deal priority score with automatic type sanitization.
-    Ranks leads dynamically based on delinquency, equity, and vacant status.
+    Calculate a deal priority score safely with type sanitization.
     """
     if df.empty:
         return df
@@ -54,7 +40,6 @@ def calculate_deal_priority(df):
     df["Days Delinquent"] = pd.to_numeric(df["Days Delinquent"], errors="coerce").fillna(0)
     df["MAO"] = pd.to_numeric(df["MAO"], errors="coerce").fillna(0)
 
-    # Calculate sub-scores
     df["Delinquency Score"] = df["Days Delinquent"].apply(
         lambda x: min(100, x / 1825 * 100) if x > 0 else 0
     )
@@ -66,7 +51,6 @@ def calculate_deal_priority(df):
         lambda x: min(50, (x - 2) * 20) if x > 2 else 0
     )
 
-    # Master Score Sum
     df["Deal Priority Score"] = (
         df["Delinquency Score"]
         + df["Absentee Score"]
@@ -91,19 +75,22 @@ def calculate_deal_priority(df):
     return df
 
 
+# ─────────────────────────────────────────────────────────────
+# FEATURE 2: CONTRACT GENERATOR
+# ─────────────────────────────────────────────────────────────
+
 def generate_contract_text(details, buyer_name):
-    """Generates a legal Florida Assignment of Real Estate Purchase & Sale Contract."""
+    """Generates a Florida Assignment of Real Estate Purchase & Sale Contract."""
     today = datetime.now().strftime("%B %d, %Y")
     mao = details.get("MAO", 0)
-    
     return f"""
 ================================================================================
          FLORIDA ASSIGNMENT OF REAL ESTATE PURCHASE & SALE CONTRACT
 ================================================================================
 Date: {today}
 County: {details.get('County', 'N/A')}
-Parcel Folio Number: {details.get('Folio', 'N/A')}
-Property Address: {details.get('Address', 'N/A')}
+Parcel Folio Number: {details['Folio']}
+Property Address: {details['Address']}
 Zip Code: {details.get('Zip Code', 'N/A')}
 
 1. PARTIES:
@@ -111,9 +98,9 @@ Zip Code: {details.get('Zip Code', 'N/A')}
    Assignee (Seller/Owner of Record): {details.get('Owner', 'N/A')}
 
 2. PROPERTY:
-   The property located at {details.get('Address', 'N/A')}, {details.get('Zip Code', '')},
+   The property located at {details['Address']}, {details.get('Zip Code', '')},
    County of {details.get('County', '')}, Florida.
-   Parcel ID / Folio: {details.get('Folio', 'N/A')}
+   Parcel ID / Folio: {details['Folio']}
 
 3. AGREED PURCHASE PRICE:
    The Assignee agrees to purchase the Property for the sum of:
@@ -144,7 +131,7 @@ Zip Code: {details.get('Zip Code', 'N/A')}
 
 
 # ─────────────────────────────────────────────────────────────
-# 3. SIDEBAR CONTROLS & NAVIGATION
+# FEATURE 3: SIDEBAR — COUNTY SELECTION & ENGINE CONTROLS
 # ─────────────────────────────────────────────────────────────
 
 st.sidebar.header("⚙️ Engine Controls")
@@ -156,7 +143,7 @@ selected_county = st.sidebar.selectbox(
 )
 county_config = COUNTIES[selected_county]
 
-# Cache flush on county switch
+# Automatically clear cache if county selection changes
 st.session_state.setdefault("current_county", selected_county)
 if st.session_state["current_county"] != selected_county:
     st.session_state["scraped_leads"] = None
@@ -172,7 +159,7 @@ scrape_mode = st.sidebar.radio(
 if scrape_mode == "Background Pipeline (Scheduled)":
     run_background = st.sidebar.checkbox("▶️ Run background pipeline", value=True)
     if run_background:
-        st.sidebar.info("3030 Engine Active: Auto-scraping every 30 mins.")
+        st.sidebar.info("Background pipeline is active. The engine will auto-scrape on page load and every 30 minutes.")
 else:
     st.sidebar.warning("Manual mode — click the scrape button when ready.")
 
@@ -201,68 +188,15 @@ buyer_entity_default = st.sidebar.text_input(
 
 
 # ─────────────────────────────────────────────────────────────
-# 4. MAIN DASHBOARD CONTENT AREA
+# MAIN DASHBOARD AREA
 # ─────────────────────────────────────────────────────────────
 
 st.title("🏡 24/7 Real Estate Property Engine")
-st.caption(f"3030 Precision Automation · Targeting: **{selected_county} County, FL**")
+st.write(f"Targeting County: **{selected_county}**")
 
-st.markdown("---")
-
-# Demo lead pipeline trigger
-if st.button("🚀 Run 3030 Scraping Pipeline"):
-    with st.spinner("Querying Property Appraiser & Tax Collector records..."):
-        # Simulated scraped dataframe matching engine architecture
-        data = {
-            "Folio": ["30-2134-001-0010", "30-3112-005-0210"],
-            "Address": ["123 NW 36th St, Miami, FL", "456 SE 2nd Ave, Hialeah, FL"],
-            "County": [selected_county, selected_county],
-            "Zip Code": ["33127", "33010"],
-            "Owner": ["John Doe Estate", "Jane Smith"],
-            "Market Value": [320000, 240000],
-            "Est. Repairs": [45000, 15000],
-            "Days Delinquent": [720, 180],
-            "Absentee Owner": [True, True],
-            "Vacant Flag": [True, False],
-            "MAO": [180000, 140000],
-            "SqFt": [1650, 1200]
-        }
-        df_raw = pd.DataFrame(data)
-        st.session_state["scraped_leads"] = calculate_deal_priority(df_raw)
-        st.session_state["last_scrape"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-
-# Display Scraped Results & Contracts
-if "scraped_leads" in st.session_state and st.session_state["scraped_leads"] is not None:
-    df_leads = st.session_state["scraped_leads"]
-    
-    st.subheader("🔥 Prioritized Deals")
-    st.dataframe(
-        df_leads[[
-            "Tier", "Deal Priority Score", "Address", "Market Value", 
-            "MAO", "Days Delinquent", "Owner"
-        ]],
-        use_container_width=True
-    )
-    
-    st.markdown("---")
-    st.subheader("📄 Contract Generator")
-    selected_address = st.selectbox("Select Property to Draft Assignment Contract:", df_leads["Address"])
-    
-    selected_deal = df_leads[df_leads["Address"] == selected_address].iloc[0].to_dict()
-    
-    contract_code = generate_contract_text(selected_deal, buyer_entity_default)
-    
-    st.code(contract_code, language="text")
-    
-    st.download_button(
-        label="💾 Download Contract (.txt)",
-        data=contract_code,
-        file_name=f"Assignment_Contract_{selected_deal['Folio']}.txt",
-        mime="text/plain"
-    )
 
 # ─────────────────────────────────────────────────────────────
-# 5. FOOTER & LEGAL COMPLIANCE
+# FEATURE 4: FOOTER & LEGAL COMPLIANCE
 # ─────────────────────────────────────────────────────────────
 
 st.markdown("---")
