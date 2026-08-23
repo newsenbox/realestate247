@@ -8,8 +8,8 @@ import streamlit as st
 # 1. PAGE CONFIGURATION & COUNTY CONFIGURATION
 # ==============================================================================
 st.set_page_config(
-    page_title="⚡ 24_7 REAL ESTATE ENGINE 3030",
-    page_icon="⚡",
+    page_title="🏡 24_7 REAL ESTATE ENGINE 3030",
+    page_icon="🏡",
     layout="wide",
     initial_sidebar_state="expanded",
 )
@@ -344,7 +344,7 @@ st.sidebar.markdown("---")
 st.sidebar.header("⚙️ Engine Controls")
 
 selected_county = st.sidebar.selectbox(
-    "📍 Select County",
+    "🏡 Select County",
     options=list(COUNTIES.keys()),
     index=0,
 )
@@ -402,7 +402,7 @@ st.sidebar.markdown(
     <div style='font-size:0.8rem; color:#cbd5e1;'>
         <p>📡 <strong>System Status:</strong> <span style='color:#00ff88;'>ONLINE</span></p>
         <p>🎯 <strong>Active Counties:</strong> Miami-Dade, Broward, Palm Beach</p>
-        <p>⚡ <strong>Scraper Core:</strong> Multi-Node Active</p>
+        <p>🏡 <strong>Scraper Core:</strong> Multi-Node Active</p>
         <p>🎙️ <strong>Voice Agent:</strong> Retell AI Enabled</p>
     </div>
 """,
@@ -468,7 +468,7 @@ if page == "1. Scraper Control & Search":
 
     st.markdown("<br>", unsafe_allow_html=True)
 
-    st.subheader("⚡ Quantum Search & Multi-Filter Controls")
+    st.subheader("🏡 Quantum Search & Multi-Filter Controls")
     c1, c2, c3, c4 = st.columns([2, 1, 1, 1])
     with c1:
         st.text_input(
