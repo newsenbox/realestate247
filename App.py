@@ -134,6 +134,19 @@ st.markdown(
         border-radius: 10px !important;
     }
     
+    /* High Visibility Contract Styling */
+    .stTextArea textarea {
+        background-color: #f8fafc !important;
+        color: #000000 !important;
+        font-family: 'Courier New', Courier, monospace !important;
+        font-weight: 700 !important;
+        font-size: 0.95rem !important;
+        line-height: 1.5 !important;
+        border: 2px solid #00f2fe !important;
+        border-radius: 12px !important;
+        padding: 15px !important;
+    }
+    
     .stButton>button {
         background: linear-gradient(135deg, #00f2fe 0%, #4facfe 100%) !important;
         color: #020305 !important;
@@ -262,8 +275,7 @@ Zip Code: {details.get('Zip Code', 'N/A')}
    agreement for the Property located at the above address.
 
    - Agreed Target Purchase Price (MAO): ${mao:,.2f}
-   - Estimated Assignment Fee: $15,000.00
-   - Estimated Repair Costs: ${details.get('Est. Repairs', 0):,.2f}
+   - Estimated Assignment Fee: $15,000.00    - Estimated Repair Costs:${details.get('Est. Repairs', 0):,.2f}
    - Square Footage: {details.get('SqFt', 0):,.0f} sq ft
 
 5. CLOSING:
@@ -287,6 +299,7 @@ if "pipeline_leads" not in st.session_state:
         {
             "Property Address": "1245 NW 36th St, Miami, FL",
             "Owner Name": "Johnathan H. Doe",
+            "Phone": "3055550192",
             "Market Value": 300000,
             "Est. Repairs": 40000,
             "MAO": 170000,
@@ -297,6 +310,7 @@ if "pipeline_leads" not in st.session_state:
         {
             "Property Address": "7820 NW 12th Ave, Miami, FL",
             "Owner Name": "Apex Assets LLC",
+            "Phone": "7865550841",
             "Market Value": 250000,
             "Est. Repairs": 35000,
             "MAO": 140000,
@@ -307,6 +321,7 @@ if "pipeline_leads" not in st.session_state:
         {
             "Property Address": "3101 Opa-locka Blvd, Opa-locka, FL",
             "Owner Name": "Estate of Mary Johnson",
+            "Phone": "3055550199",
             "Market Value": 380000,
             "Est. Repairs": 60000,
             "MAO": 206000,
@@ -402,7 +417,7 @@ st.sidebar.markdown(
         <p>📡 <strong>System Status:</strong> <span style='color:#00ff88;'>ONLINE</span></p>
         <p>🎯 <strong>Active Counties:</strong> Miami-Dade, Broward, Palm Beach</p>
         <p>🏡 <strong>Scraper Core:</strong> Multi-Node Active</p>
-        <p>📲 <strong>Outreach Mode:</strong> Manual Direct Calling / SMS</p>
+        <p>📲 <strong>Outreach Mode:</strong> Mobile Quick-Call / Direct SMS Active</p>
     </div>
 """,
     unsafe_allow_html=True,
@@ -508,7 +523,7 @@ if page == "1. Scraper Control & Search":
 
     st.markdown("---")
 
-    st.subheader("🔥 Prioritized Target Cards")
+    st.subheader("🔥 Prioritized Target Cards & Quick Actions")
     dc1, dc2, dc3 = st.columns(3)
 
     with dc1:
@@ -530,7 +545,11 @@ if page == "1. Scraper Control & Search":
         """,
             unsafe_allow_html=True,
         )
-        st.button("TRACE CONTACTS", key="c1_btn", use_container_width=True)
+        b1, b2 = st.columns(2)
+        with b1:
+            st.link_button("📞 CALL", "tel:13055550192", use_container_width=True)
+        with b2:
+            st.link_button("💬 SMS", "sms:13055550192", use_container_width=True)
 
     with dc2:
         st.markdown(
@@ -551,7 +570,11 @@ if page == "1. Scraper Control & Search":
         """,
             unsafe_allow_html=True,
         )
-        st.button("TRACE CONTACTS", key="c2_btn", use_container_width=True)
+        b1, b2 = st.columns(2)
+        with b1:
+            st.link_button("📞 CALL", "tel:17865550841", use_container_width=True)
+        with b2:
+            st.link_button("💬 SMS", "sms:17865550841", use_container_width=True)
 
     with dc3:
         st.markdown(
@@ -572,7 +595,11 @@ if page == "1. Scraper Control & Search":
         """,
             unsafe_allow_html=True,
         )
-        st.button("TRACE CONTACTS", key="c3_btn", use_container_width=True)
+        b1, b2 = st.columns(2)
+        with b1:
+            st.link_button("📞 CALL", "tel:13055550199", use_container_width=True)
+        with b2:
+            st.link_button("💬 SMS", "sms:13055550199", use_container_width=True)
 
 
 # ==============================================================================
@@ -583,7 +610,7 @@ elif page == "2. Skip Trace & Contact Terminal":
         '<div class="glow-title">SKIP TRACE TERMINAL // 3030</div>',
         unsafe_allow_html=True,
     )
-    st.caption("Deep-Search Owner Intelligence, Phone Matrix & Optical Recon Map")
+    st.caption("Deep-Search Owner Intelligence, Mobile Call/SMS Matrix & Optical Recon Map")
     st.markdown("<br>", unsafe_allow_html=True)
 
     col_input, col_action = st.columns([3, 1])
@@ -598,250 +625,4 @@ elif page == "2. Skip Trace & Contact Terminal":
 
     if run_trace:
         with st.spinner("Extracting owner ties, relative networks, and contact records..."):
-            time.sleep(1)
-
-    st.markdown(
-        """
-        <div class="hud-card" style="margin-top:20px;">
-            <div style="display:flex; justify-content:space-between; align-items:center;">
-                <div>
-                    <h3 style="color:#00f2fe; margin:0;">RECORD MATCH FOUND: JOHNATHAN H. DOE</h3>
-                    <p style="color:#94a3b8; font-size:0.85rem;">Last Verified Public Record Activity: Recent</p>
-                </div>
-                <span class="badge-neon-cyan">CONFIDENCE SCORE: 98.4%</span>
-            </div>
-            <hr style="border-color:rgba(0,242,254,0.2);">
-            <div style="display:grid; grid-template-columns: repeat(3, 1fr); gap:15px; font-size:0.9rem;">
-                <div>
-                    <p style="color:#64748b; margin:0;">PRIMARY PHONE</p>
-                    <p style="color:#00ff88; font-weight:800; font-size:1.1rem;">(305) 555-0192</p>
-                </div>
-                <div>
-                    <p style="color:#64748b; margin:0;">SECONDARY PHONE</p>
-                    <p style="color:#ffffff; font-weight:800; font-size:1.1rem;">(786) 555-0841</p>
-                </div>
-                <div>
-                    <p style="color:#64748b; margin:0;">VERIFIED EMAIL</p>
-                    <p style="color:#00f2fe; font-weight:800; font-size:1.1rem;">jdoe.investments@gmail.com</p>
-                </div>
-            </div>
-        </div>
-    """,
-        unsafe_allow_html=True,
-    )
-
-    st.markdown("<br>", unsafe_allow_html=True)
-
-    st.subheader("🛰️ Property Optical Recon & Sales History")
-    recon_col1, recon_col2 = st.columns([1.2, 1])
-
-    with recon_col1:
-        st.markdown("**Satellite Optical Map**")
-        encoded_address = urllib.parse.quote(
-            target_address if target_address else "Miami Dade County FL"
-        )
-        map_url = f"https://maps.google.com/maps?q={encoded_address}&t=k&z=19&ie=UTF8&iwloc=&output=embed"
-        st.components.v1.iframe(map_url, height=320, scrolling=False)
-
-    with recon_col2:
-        st.markdown("**Last Sale & County Records**")
-        st.info("""
-        **Last Purchase Price:** $185,000.00  
-        **Last Sale Date:** 04/12/2018  
-        **Owner of Record:** Johnathan H. Doe  
-        **Folio / Parcel ID:** 30-3115-002  
-        **Status:** Active Deal Lead
-        """)
-
-
-# ==============================================================================
-# PAGE 3: DEAL PIPELINE & CRM
-# ==============================================================================
-elif page == "3. Deal Pipeline & CRM":
-    st.markdown(
-        '<div class="glow-title">DEAL PIPELINE CRM // 3030</div>',
-        unsafe_allow_html=True,
-    )
-    st.caption("Active Acquisition Tracker & Lead Conversion Pipeline")
-    st.markdown("<br>", unsafe_allow_html=True)
-
-    col1, col2, col3, col4 = st.columns(4)
-    with col1:
-        st.markdown("### 📥 Scraped / New")
-        st.info("• 1245 NW 36th St\n• 7820 NW 12th Ave")
-    with col2:
-        st.markdown("### 📲 Contacted")
-        st.warning("• 3101 Opa-locka Blvd\n• 1420 NW 54th St")
-    with col3:
-        st.markdown("### 🤝 Under Offer")
-        st.success("• 890 NE 125th St ($140k)")
-    with col4:
-        st.markdown("### 💰 Closed / Assigned")
-        st.markdown("• 512 SW 8th St (**+$25k Fee**)")
-
-    st.markdown("<br>", unsafe_allow_html=True)
-    st.subheader("📊 Lead Matrix Data & Priority Scoring")
-    processed_df = calculate_deal_priority(st.session_state.pipeline_leads)
-    st.dataframe(processed_df, use_container_width=True)
-
-
-# ==============================================================================
-# PAGE 4: MARKET ANALYTICS (WITH CALCULATOR & CONTRACT GENERATOR)
-# ==============================================================================
-elif page == "4. Market Analytics & Calculator":
-    st.markdown(
-        '<div class="glow-title">QUANTUM MARKET ANALYTICS & CONTRACT GENERATOR</div>',
-        unsafe_allow_html=True,
-    )
-    st.caption("ARV / MAO Deal Evaluation System & Automated Legal Generator")
-
-    st.markdown("<br>", unsafe_allow_html=True)
-
-    st.subheader("🧮 ARV & MAO Investment Deal Calculator")
-    calc_col1, calc_col2 = st.columns(2)
-
-    with calc_col1:
-        market_value = st.number_input(
-            "After Repair Value (ARV) / Market Value ($)",
-            min_value=0,
-            max_value=10000000,
-            value=300000,
-            step=5000,
-        )
-
-        est_repairs = st.number_input(
-            "Estimated Repair Costs ($)",
-            min_value=0,
-            max_value=1000000,
-            value=8000,
-            step=1000,
-        )
-
-    with calc_col2:
-        investor_rule = st.number_input(
-            "Investor Rule Target (%)",
-            min_value=1,
-            max_value=100,
-            value=70,
-            step=1,
-        )
-
-        rule_pct = investor_rule / 100.0
-        calculated_mao = (market_value * rule_pct) - est_repairs
-        estimated_profit = market_value * 0.15
-
-    st.markdown("<br>", unsafe_allow_html=True)
-
-    res_col1, res_col2 = st.columns(2)
-    with res_col1:
-        st.metric(
-            label="Calculated Maximum Allowable Offer (MAO)",
-            value=f"${max(0.0, calculated_mao):,.2f}",
-        )
-    with res_col2:
-        st.metric(
-            label="Target Wholesale Assignment Fee (15%)",
-            value=f"${max(0.0, estimated_profit):,.2f}",
-        )
-
-    st.markdown("---")
-
-    st.subheader("📄 Florida Assignment Contract Generator")
-    st.caption("Auto-fills using your active calculation and account defaults")
-
-    g_col1, g_col2 = st.columns(2)
-    with g_col1:
-        prop_address = st.text_input("Property Address", value="1245 NW 36th St, Miami, FL")
-        prop_zip = st.text_input("Zip Code", value="33142")
-        prop_folio = st.text_input("Parcel ID / Folio Number", value="30-3115-002")
-    with g_col2:
-        prop_owner = st.text_input("Owner of Record (Assignee)", value="Johnathan H. Doe")
-        prop_county = st.text_input("County", value=selected_county.split(",")[0])
-        prop_sqft = st.number_input("Square Feet", value=1850, step=50)
-
-    contract_details = {
-        "Address": prop_address,
-        "Zip Code": prop_zip,
-        "Folio": prop_folio,
-        "Owner": prop_owner,
-        "County": prop_county,
-        "SqFt": prop_sqft,
-        "Market Value": market_value,
-        "Est. Repairs": est_repairs,
-    }
-
-    generated_text = generate_assignment_contract(
-        buyer_entity_default, contract_details, calculated_mao
-    )
-
-    st.text_area("Contract Preview", value=generated_text, height=350)
-
-    st.download_button(
-        label="📥 DOWNLOAD CONTRACT (.TXT)",
-        data=generated_text,
-        file_name=f"FL_Assignment_Contract_{prop_folio}.txt",
-        mime="text/plain",
-    )
-
-
-# ==============================================================================
-# PAGE 5: SYSTEM & API MATRIX
-# ==============================================================================
-elif page == "5. System & API Matrix":
-    st.markdown(
-        '<div class="glow-title">SYSTEM MATRIX & API KEYS</div>',
-        unsafe_allow_html=True,
-    )
-    st.caption("Configure Scraping Nodes and System Webhooks")
-    st.markdown("<br>", unsafe_allow_html=True)
-
-    st.text_input(
-        "County Scraper API Key",
-        value="sk_live_3030_mdf_889211",
-        type="password",
-    )
-    st.text_input(
-        "Skip Trace Provider Webhook",
-        value="https://api.skiptrace3030.io/v1/trace",
-        type="password",
-    )
-
-    if st.button("SAVE SYSTEM CONFIGURATION"):
-        st.success("Configuration updated and deployed across all live nodes!")
-
-
-# ==============================================================================
-# UNIVERSAL FOOTER & COMPLIANCE MATRIX (FLOATING)
-# ==============================================================================
-st.markdown("---")
-st.caption(
-    f"🏡 24_7 Real Estate Property Engine · Multi-County · "
-    f"Last scrape execution: {st.session_state.get('last_scrape', 'Never')} · "
-    f"© WALTONEXLLC & 360 NEW BEGINNING LLC"
-)
-
-st.markdown(
-    """
-    <div class="floating-footer">
-        <div class="footer-container">
-            <div class="footer-box">
-                <div class="footer-header">⚖️ FL Wholesaling Licensing (Ch 475)</div>
-                Contract assignments are fully legal under Florida law. Market your equitable interest in the contract, not the property title itself, to ensure compliance without requiring a real estate broker license.
-            </div>
-            <div class="footer-box">
-                <div class="footer-header">🚫 Do Not Call (DNC) Compliance</div>
-                Scrub all owner contacts against the National DNC Registry before initiating manual outbound calls/SMS. Always remain TCPA compliant.
-            </div>
-            <div class="footer-box">
-                <div class="footer-header">✍️ E-Signature Validity</div>
-                Under Florida UETA (FL Stat § 668.50) and the Federal ESIGN Act, electronic canvas signatures are legally binding when accompanied by explicit consent and full execution timestamps.
-            </div>
-            <div class="footer-box">
-                <div class="footer-header">🗄️ Multi-County Data Architecture</div>
-                Each county maintains separate endpoints for Property Appraisers, Tax Collectors, Code Enforcement, and Probate Courts. Configure individual node endpoints in Page 5.
-            </div>
-        </div>
-    </div>
-""",
-    unsafe_allow_html=True,
-)
+            time.sleep
