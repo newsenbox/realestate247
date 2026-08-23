@@ -134,6 +134,48 @@ st.markdown(
         background-color: #0a0a0f !important;
         border-right: 1px solid #00f2fe33;
     }
+
+    /* Padding to ensure main content is not hidden behind the floating footer */
+    .block-container {
+        padding-bottom: 180px !important;
+    }
+    
+    /* Floating Footer CSS */
+    .floating-footer {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        width: 100%;
+        background: rgba(5, 7, 10, 0.95);
+        border-top: 1px solid rgba(0, 242, 254, 0.4);
+        backdrop-filter: blur(12px);
+        padding: 15px 0;
+        z-index: 9999;
+        display: flex;
+        justify-content: center;
+        box-shadow: 0 -5px 25px rgba(0, 242, 254, 0.1);
+    }
+    .footer-container {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 25px;
+        width: 95%;
+        max-width: 1600px;
+    }
+    .footer-box {
+        color: #94a3b8;
+        font-size: 0.75rem;
+        line-height: 1.4;
+    }
+    .footer-header {
+        color: #00f2fe;
+        font-family: 'Orbitron', sans-serif;
+        font-size: 0.8rem;
+        font-weight: 700;
+        margin-bottom: 6px;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+    }
     </style>
 """,
     unsafe_allow_html=True,
@@ -648,37 +690,38 @@ elif page == "5. System & API Matrix":
 
 
 # ==============================================================================
-# FOOTER & LEGAL COMPLIANCE MATRIX
+# UNIVERSAL FOOTER & COMPLIANCE MATRIX (FLOATING)
 # ==============================================================================
 st.markdown("---")
-
 st.caption(
     f"🏡 24_7 Real Estate Property Engine · Multi-County · "
     f"Last scrape execution: {st.session_state.get('last_scrape', 'Never')} · "
     f"© WALTONEXLLC & 360 NEW BEGINNING LLC"
 )
 
-st.sidebar.markdown("---")
-st.sidebar.markdown(
+# This injects the floating Legal & Compliance Matrix across all pages
+st.markdown(
     """
-    **Legal & Compliance Matrix**
-
-    1. **Florida Wholesaling Licensing (Chapter 475)**  
-       Contract assignments are fully legal under Florida law. Market your equitable interest  
-       in the contract, not the property title itself, to ensure compliance without requiring  
-       a real estate broker license.
-
-    2. **Do Not Call (DNC) Compliance**  
-       Scrub all owner contacts against the National DNC Registry before  
-       initiating manual or automated outbound calls/SMS. Always remain TCPA compliant.
-
-    3. **E-Signature Validity**  
-       Under Florida UETA (FL Stat § 668.50) and the Federal ESIGN Act,  
-       electronic canvas signatures are legally binding when accompanied by  
-       explicit consent and full execution timestamps.
-
-    4. **Multi-County Data Architecture**  
-       Each county maintains separate endpoints for Property Appraisers, Tax Collectors,  
-       Code Enforcement, and Probate Courts. Configure individual node endpoints in Page 5.
-    """
+    <div class="floating-footer">
+        <div class="footer-container">
+            <div class="footer-box">
+                <div class="footer-header">⚖️ FL Wholesaling Licensing (Ch 475)</div>
+                Contract assignments are fully legal under Florida law. Market your equitable interest in the contract, not the property title itself, to ensure compliance without requiring a real estate broker license.
+            </div>
+            <div class="footer-box">
+                <div class="footer-header">🚫 Do Not Call (DNC) Compliance</div>
+                Scrub all owner contacts against the National DNC Registry before initiating manual or automated outbound calls/SMS. Always remain TCPA compliant.
+            </div>
+            <div class="footer-box">
+                <div class="footer-header">✍️ E-Signature Validity</div>
+                Under Florida UETA (FL Stat § 668.50) and the Federal ESIGN Act, electronic canvas signatures are legally binding when accompanied by explicit consent and full execution timestamps.
+            </div>
+            <div class="footer-box">
+                <div class="footer-header">🗄️ Multi-County Data Architecture</div>
+                Each county maintains separate endpoints for Property Appraisers, Tax Collectors, Code Enforcement, and Probate Courts. Configure individual node endpoints in Page 5.
+            </div>
+        </div>
+    </div>
+    """,
+    unsafe_allow_html=True,
 )
