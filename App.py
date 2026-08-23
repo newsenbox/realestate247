@@ -263,3 +263,38 @@ elif section == "Section 5: Property Inspector":
             value="123456789:ABCdefGHIjklMNOpqrs",
             type="password",
         )
+
+# ==============================================================================
+# FOOTER & LEGAL COMPLIANCE
+# ==============================================================================
+
+st.markdown("---")
+st.caption(
+    f"🏡 24_7 Real Estate Property Engine · Multi-County · "
+    f"Last scrape: {st.session_state.get('last_scrape', 'Never')} · "
+    f"© WALTONEXLLC"
+)
+
+st.sidebar.markdown("---")
+st.sidebar.markdown(
+    """
+    **Legal & Compliance**
+
+    1. **Florida Wholesaling Licensing (Chapter 475)**  
+       Contract assignments are legal in Florida. Market your equitable interest,  
+       not the property itself, to avoid acting as an unlicensed broker.
+
+    2. **Do Not Call (DNC) Compliance**  
+       Scrub all owner contacts against the National DNC Registry before  
+       initiating calls or SMS. Comply with TCPA regulations.
+
+    3. **E-Signature Validity**  
+       Under Florida UETA (FL Stat § 668.50) and the Federal ESIGN Act,  
+       electronic canvas signatures are legally enforceable when paired with  
+       consent and execution timestamps.
+
+    4. **Multi-County Data Sources**  
+       Each county has its own Property Appraiser API, tax collector, code  
+       enforcement, and probate court. Configure county endpoints in the sidebar.
+    """
+)
