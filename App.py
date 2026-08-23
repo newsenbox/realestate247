@@ -236,8 +236,8 @@ def calculate_deal_priority(df):
 
     return df
 
-def generate_assignment_contract(buyer_name, details, mao):
-    """Generates the Florida Assignment of Real Estate Purchase & Sale Contract."""
+def generate_assignment_contract(details):
+    """Generates the Florida Assignment of Real Estate Purchase & Sale Contract using block inputs."""
     today = datetime.now().strftime("%B %d, %Y")
     return f"""================================================================================
           FLORIDA ASSIGNMENT OF REAL ESTATE PURCHASE & SALE CONTRACT
@@ -249,37 +249,39 @@ Property Address: {details.get('Address', 'N/A')}
 Zip Code: {details.get('Zip Code', 'N/A')}
 
 1. PARTIES:
-   Assignor (Wholesaler/Buyer): {buyer_name}
-   Assignee (Seller/Owner of Record): {details.get('Owner', 'N/A')}
+   Assignor (Wholesaler/Buyer): {details.get('Assignor', 'N/A')}
+   Assignee (Seller/Owner of Record): {details.get('Assignee', 'N/A')}
 
 2. PROPERTY:
-   The property located at {details.get('Address', 'N/A')}, {details.get('Zip Code', '')},
+   The property located at {details.get('Address', 'N/A')}, Zip Code {details.get('Zip Code', '')},
    County of {details.get('County', '')}, Florida.
    Parcel ID / Folio: {details.get('Folio', 'N/A')}
+   Square Footage: {details.get('SqFt', 0):,.0f} sq ft
 
-3. AGREED PURCHASE PRICE:
-   The Assignee agrees to purchase the Property for the sum of:
-   ${details.get('Market Value', 0):,.2f} (Market Value)
+3. PURCHASE PRICE & FINANCIALS:
+   - Market Value (ARV): ${details.get('Market Value', 0):,.2f}
+   - Agreed Target Purchase Price (MAO): ${details.get('MAO', 0):,.2f}
+   - Estimated Repair Costs: ${details.get('Est. Repairs', 0):,.2f}
 
 4. ASSIGNMENT TERMS:
    Assignor transfers all equitable rights, title, and interest in the purchase
-   agreement for the Property located at the above address.
+   agreement for the Property located at the above address to Assignee.
 
-   - Agreed Target Purchase Price (MAO): ${mao:,.2f}
-   - Estimated Assignment Fee: $15,000.00
-   - Estimated Repair Costs: ${details.get('Est. Repairs', 0):,.2f}
-   - Square Footage: {details.get('SqFt', 0):,.0f} sq ft
+   - Assignment Fee: ${details.get('Assignment Fee', 0):,.2f}
 
 5. CLOSING:
-   Closing shall occur within 30 days of the effective date of this contract.
+   Closing shall occur within {details.get('Closing Days', 30)} days of the effective date of this contract.
    Closing costs shall be divided equally between Assignor and Assignee.
 
 6. GOVERNING LAW:
    Governed under the laws of the State of Florida (Chapter 475 compliance).
 
-7. E-SIGNATURE:
+7. E-SIGNATURE & AUTHORIZATION:
    By signing below, both parties execute the binding terms of this contract
    electronically under the Florida UETA (FL Stat § 668.50) and Federal ESIGN Act.
+
+   Assignor Signature: {details.get('Assignor Signature', '')}
+   Assignee Signature: {details.get('Assignee Signature', '')}
 
 ================================================================================"""
 
@@ -720,14 +722,14 @@ elif page == "3. Deal Pipeline & CRM":
 
 
 # ==============================================================================
-# PAGE 4: MARKET ANALYTICS (WITH CALCULATOR & CONTRACT GENERATOR)
+# PAGE 4: MARKET ANALYTICS (WITH CALCULATOR & BLOCK INPUT CONTRACT GENERATOR)
 # ==============================================================================
 elif page == "4. Market Analytics & Calculator":
     st.markdown(
         '<div class="glow-title">QUANTUM MARKET ANALYTICS & CONTRACT GENERATOR</div>',
         unsafe_allow_html=True,
     )
-    st.caption("ARV / MAO Deal Evaluation System & Automated Legal Generator")
+    st.caption("ARV / MAO Deal Evaluation System & Modular Legal Generator")
 
     st.markdown("<br>", unsafe_allow_html=True)
 
@@ -780,40 +782,83 @@ elif page == "4. Market Analytics & Calculator":
 
     st.markdown("---")
 
-    st.subheader("📄 Florida Assignment Contract Generator")
-    st.caption("Auto-fills using your active calculation and account defaults")
+    st.subheader("📄 Florida Assignment Contract Generator (Modular Input Blocks)")
+    st.caption("Fill out the blocks below to assemble your legal document dynamically")
 
-    g_col1, g_col2 = st.columns(2)
-    with g_col1:
-        prop_address = st.text_input("Property Address", value="1245 NW 36th St, Miami, FL")
-        prop_zip = st.text_input("Zip Code", value="33142")
-        prop_folio = st.text_input("Parcel ID / Folio Number", value="30-3115-002")
-    with g_col2:
-        prop_owner = st.text_input("Owner of Record (Assignee)", value="Johnathan H. Doe")
-        prop_county = st.text_input("County", value=selected_county.split(",")[0])
-        prop_sqft = st.number_input("Square Feet", value=1850, step=50)
+    # BLOCK 1: PARTIES
+    st.markdown("#### 👥 1. Parties Block")
+    b1_col1, b1_col2 = st.columns(2)
+    with b1_col1:
+        block_assignor = st.text_input(
+            "Assignor (Wholesaler / Buyer Entity)",
+            value=buyer_entity_default,
+        )
+    with b1_col2:
+        block_assignee = st.text_input(
+            "Assignee (Seller / Owner of Record)",
+            value="Johnathan H. Doe",
+        )
+
+    # BLOCK 2: PROPERTY DETAILS
+    st.markdown("#### 🏠 2. Property Details Block")
+    b2_col1, b2_col2, b2_col3 = st.columns(3)
+    with b2_col1:
+        block_address = st.text_input("Property Address", value="1245 NW 36th St, Miami, FL")
+        block_zip = st.text_input("Zip Code", value="33142")
+    with b2_col2:
+        block_county = st.text_input("County", value=selected_county.split(",")[0])
+        block_folio = st.text_input("Parcel ID / Folio Number", value="30-3115-002")
+    with b2_col3:
+        block_sqft = st.number_input("Square Footage", value=1850, step=50)
+
+    # BLOCK 3: FINANCIALS & PURCHASE PRICE
+    st.markdown("#### 💰 3. Purchase Price & Financials Block")
+    b3_col1, b3_col2, b3_col3, b3_col4 = st.columns(4)
+    with b3_col1:
+        block_mao = st.number_input("Target Purchase Price / MAO ($)", value=float(calculated_mao), step=1000.0)
+    with b3_col2:
+        block_mv = st.number_input("Market Value / ARV ($)", value=float(market_value), step=5000.0)
+    with b3_col3:
+        block_repairs = st.number_input("Est. Repairs ($)", value=float(est_repairs), step=500.0)
+    with b3_col4:
+        block_fee = st.number_input("Assignment Fee ($)", value=15000.0, step=1000.0)
+
+    # BLOCK 4: TERMS & SIGNATURES
+    st.markdown("#### ✍️ 4. Terms & E-Signatures Block")
+    b4_col1, b4_col2, b4_col3 = st.columns(3)
+    with b4_col1:
+        block_closing_days = st.number_input("Closing Days", value=30, step=5)
+    with b4_col2:
+        block_assignor_sig = st.text_input("Assignor Electronic Signature Stamp", value="[E-SIGNED BY ASSIGNOR]")
+    with b4_col3:
+        block_assignee_sig = st.text_input("Assignee Electronic Signature Stamp", value="[PENDING ASSIGNEE SIGNATURE]")
 
     contract_details = {
-        "Address": prop_address,
-        "Zip Code": prop_zip,
-        "Folio": prop_folio,
-        "Owner": prop_owner,
-        "County": prop_county,
-        "SqFt": prop_sqft,
-        "Market Value": market_value,
-        "Est. Repairs": est_repairs,
+        "Assignor": block_assignor,
+        "Assignee": block_assignee,
+        "Address": block_address,
+        "Zip Code": block_zip,
+        "County": block_county,
+        "Folio": block_folio,
+        "SqFt": block_sqft,
+        "MAO": block_mao,
+        "Market Value": block_mv,
+        "Est. Repairs": block_repairs,
+        "Assignment Fee": block_fee,
+        "Closing Days": block_closing_days,
+        "Assignor Signature": block_assignor_sig,
+        "Assignee Signature": block_assignee_sig,
     }
 
-    generated_text = generate_assignment_contract(
-        buyer_entity_default, contract_details, calculated_mao
-    )
+    generated_text = generate_assignment_contract(contract_details)
 
-    st.text_area("Contract Preview", value=generated_text, height=380)
+    st.markdown("<br>", unsafe_allow_html=True)
+    st.text_area("Live Contract Preview", value=generated_text, height=420)
 
     st.download_button(
         label="📥 DOWNLOAD CONTRACT (.TXT)",
         data=generated_text,
-        file_name=f"FL_Assignment_Contract_{prop_folio}.txt",
+        file_name=f"FL_Assignment_Contract_{block_folio}.txt",
         mime="text/plain",
     )
 
