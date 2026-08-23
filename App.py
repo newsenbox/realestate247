@@ -232,52 +232,48 @@ def calculate_deal_priority(df):
 
     return df
 
-def generate_assignment_contract(buyer_name, details, mao):
-    """Generates the Florida Assignment of Real Estate Purchase & Sale Contract."""
+def generate_assignment_contract(assignor_name, details, mao):
+    """Generates a standard Florida Assignment of Purchase and Sale Agreement."""
     today = datetime.now().strftime("%B %d, %Y")
-    return f"""================================================================================
+    
+    contract_text = f"""================================================================================
           FLORIDA ASSIGNMENT OF REAL ESTATE PURCHASE & SALE CONTRACT
 ================================================================================
 Date: {today}
 County: {details.get('County', 'N/A')}
-Parcel Folio Number: {details.get('Folio', 'N/A')}
-Property Address: {details.get('Address', 'N/A')}
-Zip Code: {details.get('Zip Code', 'N/A')}
+Folio / Parcel ID: {details.get('Folio', 'N/A')}
 
 1. PARTIES:
-   Assignor (Wholesaler/Buyer): {buyer_name}
-   Assignee (Seller/Owner of Record): {details.get('Owner', 'N/A')}
+   Assignor: {assignor_name}
+   Assignee: [Assignee / Buyer Name]
+   Seller (Owner of Record): {details.get('Owner', 'N/A')}
 
-2. PROPERTY:
-   The property located at {details.get('Address', 'N/A')}, {details.get('Zip Code', '')},
-   County of {details.get('County', '')}, Florida.
-   Parcel ID / Folio: {details.get('Folio', 'N/A')}
+2. SUBJECT PROPERTY:
+   Address: {details.get('Address', 'N/A')}, Zip Code: {details.get('Zip Code', 'N/A')}
+   County of {details.get('County', 'N/A')}, State of Florida.
+   Parcel ID / Folio Number: {details.get('Folio', 'N/A')}
 
-3. AGREED PURCHASE PRICE:
-   The Assignee agrees to purchase the Property for the sum of:
-   ${details.get('Market Value', 0):,.2f} (Market Value)
+3. ASSIGNMENT OF RIGHTS:
+   Assignor hereby transfers and assigns to Assignee all rights, title, and 
+   interest in and to that certain Purchase and Sale Agreement for the subject property.
 
-4. ASSIGNMENT TERMS:
-   Assignor transfers all equitable rights, title, and interest in the purchase
-   agreement for the Property located at the above address.
-
-   - Agreed Target Purchase Price (MAO): ${mao:,.2f}
-   - Estimated Assignment Fee: $15,000.00
+4. FINANCIAL TERMS:
+   - Purchase Price / MAO Target: ${mao:,.2f}
+   - Market Value (ARV): ${details.get('Market Value', 0):,.2f}
    - Estimated Repair Costs: ${details.get('Est. Repairs', 0):,.2f}
-   - Square Footage: {details.get('SqFt', 0):,.0f} sq ft
 
-5. CLOSING:
-   Closing shall occur within 30 days of the effective date of this contract.
-   Closing costs shall be divided equally between Assignor and Assignee.
+5. CLOSING & TERMS:
+   - Closing shall take place on or before 30 days from agreement execution.
+   - Assignee accepts property in 'As-Is' condition unless specified otherwise.
+   - Governed under the laws of the State of Florida (FL Stat § 475 compliance).
 
-6. GOVERNING LAW:
-   Governed under the laws of the State of Florida (Chapter 475 compliance).
+================================================================================
+IN WITNESS WHEREOF, Assignor and Assignee have executed this Assignment.
 
-7. E-SIGNATURE:
-   By signing below, both parties execute the binding terms of this contract
-   electronically under the Florida UETA (FL Stat § 668.50) and Federal ESIGN Act.
-
+Assignor Signature: _______________________   Date: ______________
+Assignee Signature: _______________________   Date: ______________
 ================================================================================"""
+    return contract_text
 
 # ==============================================================================
 # 4. INITIALIZE SESSION STATE
@@ -322,7 +318,7 @@ if "pipeline_leads" not in st.session_state:
 st.sidebar.markdown(
     """
     <div style='text-align: center; padding: 10px 0;'>
-        <h2 style='color:#00f2fe; font-size: 1.2rem; margin:0;'>AUTONOMOUS ENGINE</h2>
+        <h2 style='color:#00f2fe; font-size: 1.2rem; margin:0;'>LEAD SCANNER ENGINE</h2>
         <p style='color:#64748b; font-size: 0.7rem; letter-spacing:2px;'>SYSTEM V3030.8</p>
     </div>
 """,
@@ -335,8 +331,8 @@ page = st.sidebar.radio(
         "1. Scraper Control & Search",
         "2. Skip Trace & Contact Terminal",
         "3. Deal Pipeline & CRM",
-        "4. AI Market Analytics & Calculator",
-        "5. System & API Matrix",
+        "4. Market Analytics & Calculator",
+        "5. System Settings",
     ],
 )
 
@@ -365,7 +361,7 @@ scrape_mode = st.sidebar.radio(
 if scrape_mode == "Background Pipeline (Scheduled)":
     run_background = st.sidebar.checkbox("▶️ Run background pipeline", value=True)
     if run_background:
-        st.sidebar.info("3030 Engine Active: Auto-scraping every 30 mins.")
+        st.sidebar.info("3030 Engine Active: Auto-scraping active.")
 else:
     st.sidebar.warning("Manual mode — click the scrape button when ready.")
 
@@ -395,14 +391,14 @@ buyer_entity_default = st.sidebar.text_input(
 )
 
 st.sidebar.markdown("---")
-st.sidebar.subheader("🎛️ System & Node Status")
+st.sidebar.subheader("🎛️ System Status")
 st.sidebar.markdown(
     """
     <div style='font-size:0.8rem; color:#cbd5e1;'>
         <p>📡 <strong>System Status:</strong> <span style='color:#00ff88;'>ONLINE</span></p>
         <p>🎯 <strong>Active Counties:</strong> Miami-Dade, Broward, Palm Beach</p>
         <p>🏡 <strong>Scraper Core:</strong> Multi-Node Active</p>
-        <p>🎙️ <strong>Voice Agent:</strong> Retell AI Enabled</p>
+        <p>📞 <strong>Outreach Mode:</strong> Direct Owner Calling & SMS</p>
     </div>
 """,
     unsafe_allow_html=True,
@@ -457,9 +453,9 @@ if page == "1. Scraper Control & Search":
         st.markdown(
             """
             <div class="hud-card">
-                <div class="hud-title">Automated Skip</div>
+                <div class="hud-title">Skip Match Rate</div>
                 <div class="hud-value">94.2%</div>
-                <span style="color:#00ff88; font-size:0.75rem;">Contact Match Rate</span>
+                <span style="color:#00ff88; font-size:0.75rem;">Verified Phone Numbers</span>
             </div>
         """,
             unsafe_allow_html=True,
@@ -467,7 +463,7 @@ if page == "1. Scraper Control & Search":
 
     st.markdown("<br>", unsafe_allow_html=True)
 
-    st.subheader("🏡 Quantum Search & Multi-Filter Controls")
+    st.subheader("🏡 Search & Filter Controls")
     c1, c2, c3, c4 = st.columns([2, 1, 1, 1])
     with c1:
         st.text_input(
@@ -583,7 +579,7 @@ elif page == "2. Skip Trace & Contact Terminal":
         '<div class="glow-title">SKIP TRACE TERMINAL // 3030</div>',
         unsafe_allow_html=True,
     )
-    st.caption("Deep-Search Owner Intelligence, Phone Matrix & Optical Recon Map")
+    st.caption("Owner Intelligence, Contact Numbers & Property Recon")
     st.markdown("<br>", unsafe_allow_html=True)
 
     col_input, col_action = st.columns([3, 1])
@@ -594,10 +590,10 @@ elif page == "2. Skip Trace & Contact Terminal":
         )
     with col_action:
         st.markdown("<br>", unsafe_allow_html=True)
-        run_trace = st.button("RUN DEEP SKIP TRACE", use_container_width=True)
+        run_trace = st.button("RUN SKIP TRACE", use_container_width=True)
 
     if run_trace:
-        with st.spinner("Extracting owner ties, relative networks, and contact records..."):
+        with st.spinner("Retrieving owner details and phone numbers..."):
             time.sleep(1)
 
     st.markdown(
@@ -605,10 +601,10 @@ elif page == "2. Skip Trace & Contact Terminal":
         <div class="hud-card" style="margin-top:20px;">
             <div style="display:flex; justify-content:space-between; align-items:center;">
                 <div>
-                    <h3 style="color:#00f2fe; margin:0;">RECORD MATCH FOUND: JOHNATHAN H. DOE</h3>
-                    <p style="color:#94a3b8; font-size:0.85rem;">Last Verified Public Record Activity: Recent</p>
+                    <h3 style="color:#00f2fe; margin:0;">OWNER RECORD: JOHNATHAN H. DOE</h3>
+                    <p style="color:#94a3b8; font-size:0.85rem;">Verified Owner of Record</p>
                 </div>
-                <span class="badge-neon-cyan">CONFIDENCE SCORE: 98.4%</span>
+                <span class="badge-neon-cyan">MATCH CONFIRMED</span>
             </div>
             <hr style="border-color:rgba(0,242,254,0.2);">
             <div style="display:grid; grid-template-columns: repeat(3, 1fr); gap:15px; font-size:0.9rem;">
@@ -621,7 +617,7 @@ elif page == "2. Skip Trace & Contact Terminal":
                     <p style="color:#ffffff; font-weight:800; font-size:1.1rem;">(786) 555-0841</p>
                 </div>
                 <div>
-                    <p style="color:#64748b; margin:0;">VERIFIED EMAIL</p>
+                    <p style="color:#64748b; margin:0;">EMAIL ADDRESS</p>
                     <p style="color:#00f2fe; font-weight:800; font-size:1.1rem;">jdoe.investments@gmail.com</p>
                 </div>
             </div>
@@ -632,11 +628,11 @@ elif page == "2. Skip Trace & Contact Terminal":
 
     st.markdown("<br>", unsafe_allow_html=True)
 
-    st.subheader("🛰️ Property Optical Recon & Sales History")
+    st.subheader("🛰️ Property Map & Sales History")
     recon_col1, recon_col2 = st.columns([1.2, 1])
 
     with recon_col1:
-        st.markdown("**Satellite Optical Map**")
+        st.markdown("**Satellite View**")
         encoded_address = urllib.parse.quote(
             target_address if target_address else "Miami Dade County FL"
         )
@@ -644,26 +640,34 @@ elif page == "2. Skip Trace & Contact Terminal":
         st.components.v1.iframe(map_url, height=320, scrolling=False)
 
     with recon_col2:
-        st.markdown("**Last Sale & County Records**")
+        st.markdown("**County Records Summary**")
         st.info("""
         **Last Purchase Price:** $185,000.00  
         **Last Sale Date:** 04/12/2018  
         **Owner of Record:** Johnathan H. Doe  
         **Folio / Parcel ID:** 30-3115-002  
-        **Status:** Active Deal Lead
+        **Status:** Active Prospect
         """)
 
     st.markdown("<br>", unsafe_allow_html=True)
-    st.subheader("📞 Instant AI Voice & Outreach Dispatch")
+    st.subheader("📞 Direct Owner Outreach Quick-Links")
     v1, v2 = st.columns(2)
     with v1:
-        if st.button("🎙️ Trigger AI Voice Agent Call", use_container_width=True):
-            st.success("AI Voice Agent dispatched via Retell API!")
+        st.markdown("""
+        <a href="tel:3055550192" style="text-decoration:none;">
+            <div style="background:#00f2fe; color:#020305; font-family:'Orbitron',sans-serif; font-weight:800; text-align:center; padding:12px; border-radius:10px;">
+                📞 CALL OWNER NOW (305-555-0192)
+            </div>
+        </a>
+        """, unsafe_allow_html=True)
     with v2:
-        if st.button(
-            "💬 Send Automated SMS Offer Script", use_container_width=True
-        ):
-            st.success("SMS Offer transmitted to owner primary line!")
+        st.markdown("""
+        <a href="sms:3055550192?body=Hi%20Johnathan,%20I'm%20reaching%20out%20regarding%20your%20property%20at%201245%20NW%2036th%20St." style="text-decoration:none;">
+            <div style="background:#00ff88; color:#020305; font-family:'Orbitron',sans-serif; font-weight:800; text-align:center; padding:12px; border-radius:10px;">
+                💬 SEND DIRECT SMS (305-555-0192)
+            </div>
+        </a>
+        """, unsafe_allow_html=True)
 
 
 # ==============================================================================
@@ -682,7 +686,7 @@ elif page == "3. Deal Pipeline & CRM":
         st.markdown("### 📥 Scraped / New")
         st.info("• 1245 NW 36th St\n• 7820 NW 12th Ave")
     with col2:
-        st.markdown("### 📲 Contacted")
+        st.markdown("### 📲 Called / SMS Sent")
         st.warning("• 3101 Opa-locka Blvd\n• 1420 NW 54th St")
     with col3:
         st.markdown("### 🤝 Under Offer")
@@ -696,19 +700,16 @@ elif page == "3. Deal Pipeline & CRM":
     processed_df = calculate_deal_priority(st.session_state.pipeline_leads)
     st.dataframe(processed_df, use_container_width=True)
 
-    if st.button("📞 DISPATCH AI VOICE AGENT BATCH"):
-        st.success("TELEPHONY TRIGGERED: Autonomous AI Voice Bot dispatched to leads!")
-
 
 # ==============================================================================
-# PAGE 4: AI MARKET ANALYTICS (WITH CALCULATOR & CONTRACT GENERATOR)
+# PAGE 4: MARKET ANALYTICS (WITH CALCULATOR & CONTRACT GENERATOR)
 # ==============================================================================
-elif page == "4. AI Market Analytics & Calculator":
+elif page == "4. Market Analytics & Calculator":
     st.markdown(
-        '<div class="glow-title">QUANTUM MARKET ANALYTICS & CONTRACT GENERATOR</div>',
+        '<div class="glow-title">MARKET ANALYTICS & CONTRACT GENERATOR</div>',
         unsafe_allow_html=True,
     )
-    st.caption("ARV / MAO Deal Evaluation System & Automated Legal Generator")
+    st.caption("ARV / MAO Deal Evaluation System & Assignment Contract Generator")
 
     st.markdown("<br>", unsafe_allow_html=True)
 
@@ -728,7 +729,7 @@ elif page == "4. AI Market Analytics & Calculator":
             "Estimated Repair Costs ($)",
             min_value=0,
             max_value=1000000,
-            value=8000,
+            value=40000,
             step=1000,
         )
 
@@ -743,7 +744,6 @@ elif page == "4. AI Market Analytics & Calculator":
 
         rule_pct = investor_rule / 100.0
         calculated_mao = (market_value * rule_pct) - est_repairs
-        estimated_profit = market_value * 0.15
 
     st.markdown("<br>", unsafe_allow_html=True)
 
@@ -755,24 +755,23 @@ elif page == "4. AI Market Analytics & Calculator":
         )
     with res_col2:
         st.metric(
-            label="Target Wholesale Assignment Fee (15%)",
-            value=f"${max(0.0, estimated_profit):,.2f}",
+            label="Estimated Investor Entry Target",
+            value=f"${(market_value * rule_pct):,.2f}",
         )
 
     st.markdown("---")
 
     st.subheader("📄 Florida Assignment Contract Generator")
-    st.caption("Auto-fills using your active calculation and account defaults")
+    st.caption("Fills using your calculations and account defaults")
 
     g_col1, g_col2 = st.columns(2)
     with g_col1:
-        prop_address = st.text_input("Property Address", value="1245 NW 36th St, Miami, FL")
+        prop_address = st.text_input("Property Address", value="1245 NW 36th St")
         prop_zip = st.text_input("Zip Code", value="33142")
         prop_folio = st.text_input("Parcel ID / Folio Number", value="30-3115-002")
     with g_col2:
-        prop_owner = st.text_input("Owner of Record (Assignee)", value="Johnathan H. Doe")
+        prop_owner = st.text_input("Owner of Record (Seller)", value="Johnathan H. Doe")
         prop_county = st.text_input("County", value=selected_county.split(",")[0])
-        prop_sqft = st.number_input("Square Feet", value=1850, step=50)
 
     contract_details = {
         "Address": prop_address,
@@ -780,7 +779,6 @@ elif page == "4. AI Market Analytics & Calculator":
         "Folio": prop_folio,
         "Owner": prop_owner,
         "County": prop_county,
-        "SqFt": prop_sqft,
         "Market Value": market_value,
         "Est. Repairs": est_repairs,
     }
@@ -800,39 +798,28 @@ elif page == "4. AI Market Analytics & Calculator":
 
 
 # ==============================================================================
-# PAGE 5: SYSTEM & API MATRIX
+# PAGE 5: SYSTEM SETTINGS
 # ==============================================================================
-elif page == "5. System & API Matrix":
+elif page == "5. System Settings":
     st.markdown(
-        '<div class="glow-title">SYSTEM MATRIX & API KEYS</div>',
+        '<div class="glow-title">SYSTEM SETTINGS</div>',
         unsafe_allow_html=True,
     )
-    st.caption("Configure Scraping Nodes, Webhooks, and AI Integrations")
+    st.caption("Configure Local Database Paths and Scraper Settings")
     st.markdown("<br>", unsafe_allow_html=True)
 
     st.text_input(
-        "County Scraper API Key",
-        value="sk_live_3030_mdf_889211",
-        type="password",
+        "County Portal Scraper Path",
+        value="https://www.miamidade.gov/pa/",
     )
     st.text_input(
-        "Skip Trace Provider Webhook",
+        "Skip Trace Data Endpoint",
         value="https://api.skiptrace3030.io/v1/trace",
         type="password",
     )
-    st.text_input(
-        "Voice Agent / Twilio Integration Token",
-        value="tw_token_990182371",
-        type="password",
-    )
-    st.text_input(
-        "OpenAI / DeepSeek Intelligence Key",
-        value="sk_or_v1_9921029318",
-        type="password",
-    )
 
-    if st.button("SAVE SYSTEM CONFIGURATION"):
-        st.success("Configuration updated and deployed across all live nodes!")
+    if st.button("SAVE CONFIGURATION"):
+        st.success("Settings updated successfully!")
 
 
 # ==============================================================================
@@ -851,19 +838,19 @@ st.markdown(
         <div class="footer-container">
             <div class="footer-box">
                 <div class="footer-header">⚖️ FL Wholesaling Licensing (Ch 475)</div>
-                Contract assignments are fully legal under Florida law. Market your equitable interest in the contract, not the property title itself, to ensure compliance without requiring a real estate broker license.
+                Contract assignments are legal under Florida law. Market your equitable interest in the contract, not the property title itself, to remain compliant.
             </div>
             <div class="footer-box">
                 <div class="footer-header">🚫 Do Not Call (DNC) Compliance</div>
-                Scrub all owner contacts against the National DNC Registry before initiating manual or automated outbound calls/SMS. Always remain TCPA compliant.
+                Scrub owner contacts against the National DNC Registry before calling or sending SMS manually. Always maintain TCPA compliance.
             </div>
             <div class="footer-box">
                 <div class="footer-header">✍️ E-Signature Validity</div>
-                Under Florida UETA (FL Stat § 668.50) and the Federal ESIGN Act, electronic canvas signatures are legally binding when accompanied by explicit consent and full execution timestamps.
+                Under Florida UETA (FL Stat § 668.50) and the Federal ESIGN Act, electronic signatures are legally binding when executed with mutual consent.
             </div>
             <div class="footer-box">
                 <div class="footer-header">🗄️ Multi-County Data Architecture</div>
-                Each county maintains separate endpoints for Property Appraisers, Tax Collectors, Code Enforcement, and Probate Courts. Configure individual node endpoints in Page 5.
+                Each county maintains separate endpoints for Property Appraisers, Tax Collectors, Code Enforcement, and Probate Courts.
             </div>
         </div>
     </div>
