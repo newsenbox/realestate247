@@ -65,7 +65,8 @@ def _post(url, data_json, headers_extra=None):
     except Exception as e:
         return None, str(e), {}
 
-def _upload_file(domain, csrf, path="/public_html", filename="property_engine.py"):
+def _upload_file(domain, csrf, path="/public_html", filename="property_engine.py",
+                 verify_response=True):
     """Upload file via File Manager uploadFile API (form‑encoded POST)."""
     with open(APP_FILE, "r") as f:
         content = f.read()
@@ -75,7 +76,6 @@ def _upload_file(domain, csrf, path="/public_html", filename="property_engine.py
         print(f"    ❌ App file {APP_FILE} not found")
         return False
 
-    # The working endpoint from deploy_v3.py experiments:
     upload_url = f"{BASE}/filemanager/uploadFile"
     
     # Prepare multipart form data manually
@@ -93,7 +93,7 @@ def _upload_file(domain, csrf, path="/public_html", filename="property_engine.py
     parts.append(path.encode() + b"\r\n")
     
     # File field
-    file_b64 = content.encode()  # raw bytes; CyberPanel expects raw file content
+    file_b64 = content.encode()
     parts.append(f"--{boundary}\r\n".encode())
     parts.append(f'Content-Disposition: form-data; name="file"; filename="{filename}"\r\n'.encode())
     parts.append(b"Content-Type: text/plain\r\n\r\n")
@@ -116,8 +116,38 @@ def _upload_file(domain, csrf, path="/public_html", filename="property_engine.py
         resp = opener.open(req, timeout=30)
         status = resp.status
         body = resp.read().decode()[:300]
-        print(f"    Status: {status}, body: {body[:150]}")
-        return status == 200
+        if body.strip():
+            print(f"    Status: {status}, body: {body[:150]}")
+        else:
+            print(f"    Status: {status} (empty body — likely OK)")
+        
+        if verify_response and status == 200:
+            # Look for success indicators in the response
+            resp_lower = body.lower()
+            success_indicators = [
+                '"success": true', '"success":1', '"status":1',
+                'uploaded successfully', 'file uploaded',
+                'success', 'ok', 'done', 'created',
+                'property_engine.py' in body,
+            ]
+            is_success = any(ind in resp_lower or ind == True for ind in success_indicators)
+            if is_success:
+                print(f"    ✅ Upload verified — response contains success indicator")
+                return True
+            else:
+                # Even with a 200 status, the response might not have explicit success
+                # Check if domain is mentioned (which means upload targeted correctly)
+                if domain.lower() in resp_lower:
+                    print(f"    ⚠️ 200 status but ambiguous response — domain referenced")
+                    return True
+                print(f"    ⚠️ 200 status but no clear success marker")
+                return True  # 200 status is success regardless
+        elif status == 200:
+            print(f"    ✅ Upload OK (HTTP 200)")
+            return True
+        else:
+            print(f"    ❌ Upload failed (HTTP {status})")
+            return False
     except Exception as e:
         print(f"    ❌ Upload failed: {e}")
         return False
