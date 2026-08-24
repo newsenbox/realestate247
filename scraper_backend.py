@@ -50,10 +50,17 @@ COUNTIES = {
         "tax_delinquent_url": "https://www.miamidade.gov/global/search/search.page?query=tax+delinquent",
         "code_violations_url": "https://www.miamidade.gov/global/government/departments/mCode/enforcement/index.page",
         "probate_url": "https://www.miamigov.com/courts/circuit/probate",
-        "folios": [
+        "tax_folios": [
             "0821220021310", "3021020010450", "0831150050120",
-            "3031100000100", "0821220010020", "3021030040880",
-            "0821220030080", "3031100010001", "0831150020030",
+            "3031100000100", "0821220010020",
+        ],
+        "code_folios": [
+            "3021030040880", "0821220030080", "3031100010001",
+            "0831150020030", "0821220040010",
+        ],
+        "probate_folios": [
+            "3031100020001", "0821220050001", "3021020030001",
+            "0831150030001", "3031100030001",
         ],
     },
     "Broward": {
@@ -61,9 +68,14 @@ COUNTIES = {
         "tax_delinquent_url": "https://www.browardcounty.gov/tax-delinquent",
         "code_violations_url": "https://www.browardcounty.gov/code-enforcement",
         "probate_url": "https://www.browardclerk.com/probate",
-        "folios": [
+        "tax_folios": [
             "1511110010001", "1511110020002", "1511110030003",
-            "1611110010001", "1611110020002",
+        ],
+        "code_folios": [
+            "1611110010001", "1611110020002", "1711110010001",
+        ],
+        "probate_folios": [
+            "1511110040001", "1611110030001", "1711110020001",
         ],
     },
     "Orange": {
@@ -71,9 +83,14 @@ COUNTIES = {
         "tax_delinquent_url": "https://www.ocpau.com/tax-collections",
         "code_violations_url": "https://www.ocpau.com/code-enforcement",
         "probate_url": "https://www.ocpau.com/probate",
-        "folios": [
+        "tax_folios": [
             "0911110010001", "0911110020002", "0911110030003",
-            "1011110010001", "1011110020002",
+        ],
+        "code_folios": [
+            "1011110010001", "1011110020002", "1011110030001",
+        ],
+        "probate_folios": [
+            "0911110040001", "1011110030001", "1111110010001",
         ],
     },
     "Hillsborough": {
@@ -81,9 +98,14 @@ COUNTIES = {
         "tax_delinquent_url": "https://www.hctax.com/tax-delinquent",
         "code_violations_url": "https://www.hillsboroughcounty.org/code-enforcement",
         "probate_url": "https://www.hillsboroughclerk.com/probate",
-        "folios": [
+        "tax_folios": [
             "1211110010001", "1211110020002", "1211110030003",
-            "1311110010001", "1311110020002",
+        ],
+        "code_folios": [
+            "1311110010001", "1311110020002", "1411110010001",
+        ],
+        "probate_folios": [
+            "1211110040001", "1311110030001", "1411110020001",
         ],
     },
     "Pinellas": {
@@ -91,9 +113,14 @@ COUNTIES = {
         "tax_delinquent_url": "https://www.pcpao.org/tax-delinquent",
         "code_violations_url": "https://www.pinellascounty.org/code-enforcement",
         "probate_url": "https://www.pinellascourts.org/probate",
-        "folios": [
+        "tax_folios": [
             "1411110010001", "1411110020002", "1411110030003",
-            "1511110010001", "1511110020002",
+        ],
+        "code_folios": [
+            "1511110010001", "1511110020002", "1511110030001",
+        ],
+        "probate_folios": [
+            "1411110040001", "1511110040001", "1611110010001",
         ],
     },
 }
@@ -177,7 +204,7 @@ def calculate_score(days_delinquent: int, absentee: bool, vacant: bool, market_v
 def scrape_tax_delinquent(county: str, county_config: dict) -> list:
     """Scrape up to 10 tax-delinquent leads."""
     leads = []
-    for folio in county_config.get("folios", [])[:10]:
+    for folio in county_config.get("tax_folios", [])[:10]:
         data = scrape_property_data(folio, county_config)
         sqft = data["sqft"]
         repairs = sqft * 50
@@ -213,7 +240,7 @@ def scrape_tax_delinquent(county: str, county_config: dict) -> list:
 def scrape_code_violations(county: str, county_config: dict) -> list:
     """Scrape up to 10 code-violation leads."""
     leads = []
-    for folio in county_config.get("folios", [])[:10]:
+    for folio in county_config.get("code_folios", [])[:10]:
         data = scrape_property_data(folio, county_config)
         sqft = data["sqft"]
         repairs = sqft * 50
@@ -249,7 +276,7 @@ def scrape_code_violations(county: str, county_config: dict) -> list:
 def scrape_probate(county: str, county_config: dict) -> list:
     """Scrape up to 10 probate leads."""
     leads = []
-    for folio in county_config.get("folios", [])[:10]:
+    for folio in county_config.get("probate_folios", [])[:10]:
         data = scrape_property_data(folio, county_config)
         sqft = data["sqft"]
         repairs = sqft * 50

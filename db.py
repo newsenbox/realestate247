@@ -330,22 +330,26 @@ def get_dashboard_metrics(county: Optional[str] = None) -> dict:
         total = conn.execute(f"SELECT COUNT(*) FROM leads {where}", param).fetchone()[0]
 
         hot = conn.execute(
-            f"SELECT COUNT(*) FROM leads {where} AND tier IN ('🔥 Hot Deal', '🔥 Critical')",
+            f"SELECT COUNT(*) FROM leads {where} AND tier IN ('🔥 Hot Deal', '🔥 Critical')"
+            if where else f"SELECT COUNT(*) FROM leads WHERE tier IN ('🔥 Hot Deal', '🔥 Critical')",
             param,
         ).fetchone()[0]
 
         good = conn.execute(
-            f"SELECT COUNT(*) FROM leads {where} AND tier IN ('✅ Good Deal', '✅ Hot')",
+            f"SELECT COUNT(*) FROM leads {where} AND tier IN ('✅ Good Deal', '✅ Hot')"
+            if where else f"SELECT COUNT(*) FROM leads WHERE tier IN ('✅ Good Deal', '✅ Hot')",
             param,
         ).fetchone()[0]
 
         review = conn.execute(
-            f"SELECT COUNT(*) FROM leads {where} AND tier IN ('⚠️ Worth Reviewing', '⚠️ Review')",
+            f"SELECT COUNT(*) FROM leads {where} AND tier IN ('⚠️ Worth Reviewing', '⚠️ Review')"
+            if where else f"SELECT COUNT(*) FROM leads WHERE tier IN ('⚠️ Worth Reviewing', '⚠️ Review')",
             param,
         ).fetchone()[0]
 
         cold = conn.execute(
-            f"SELECT COUNT(*) FROM leads {where} AND tier IN ('❌ Low Priority', '❌ Cold')",
+            f"SELECT COUNT(*) FROM leads {where} AND tier IN ('❌ Low Priority', '❌ Cold')"
+            if where else f"SELECT COUNT(*) FROM leads WHERE tier IN ('❌ Low Priority', '❌ Cold')",
             param,
         ).fetchone()[0]
 
